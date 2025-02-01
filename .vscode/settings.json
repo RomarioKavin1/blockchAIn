@@ -1,0 +1,3 @@
+{
+  "python.analysis.extraPaths": ["./cdp_agent/src/oldFile", "./cdp_agent/src"]
+}

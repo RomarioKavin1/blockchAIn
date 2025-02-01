@@ -6,8 +6,8 @@ class DeployTokenCapability(CDPCapability):
     """Deploy ERC-20 token contracts"""
     async def execute(self, agent_name: str, thread_id: str,
                      name: str, symbol: str, initial_supply: int) -> Dict[str, Any]:
-        wallet = await self.wallet_manager.get_or_create_wallet(agent_name, thread_id)
         try:
+            wallet = await self.wallet_manager.get_or_create_wallet(agent_name, thread_id)
             contract = wallet.deploy_token(name, symbol, initial_supply)
             result = contract.wait()
             return {

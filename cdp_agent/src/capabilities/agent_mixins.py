@@ -1,5 +1,5 @@
 from typing import Dict, Any, List, Type
-from .cdp_base import CDPCapability
+from .cdp_base import CDPCapability, WalletManager
 
 # Import all capabilities
 from .asset_capabilities import (
@@ -29,6 +29,7 @@ class CDPAgentMixin:
     """Base mixin for adding CDP capabilities to agents"""
     
     def __init__(self, capabilities: List[Type[CDPCapability]] = None):
+        self.wallet_manager = WalletManager("data/agent_wallets.json")
         self.capabilities: Dict[str, CDPCapability] = {}
         if capabilities:
             for cap in capabilities:
@@ -50,6 +51,14 @@ class CDPAgentMixin:
             agent_name, thread_id, **kwargs
         )
 
+class TokenDeploymentMixin(CDPAgentMixin):
+    """Mixin for token deployment capabilities"""
+    def __init__(self):
+        super().__init__([
+            DeployTokenCapability,
+            BalanceCapability
+        ])
+        
 class AssetManagementMixin(CDPAgentMixin):
     """Mixin for basic asset management capabilities"""
     def __init__(self):

@@ -8,8 +8,8 @@ class BalanceCapability(CDPCapability):
     """Get balance for specific assets"""
     async def execute(self, agent_name: str, thread_id: str, 
                      asset_id: Optional[str] = None) -> Dict[str, Any]:
-        wallet = await self.wallet_manager.get_or_create_wallet(agent_name, thread_id)
         try:
+            wallet = await self.wallet_manager.get_or_create_wallet(agent_name, thread_id)
             if asset_id:
                 balance = wallet.balance(asset_id)
                 return {"status": "success", "balance": str(balance), "asset": asset_id}

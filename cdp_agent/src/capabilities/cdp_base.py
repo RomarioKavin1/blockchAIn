@@ -104,78 +104,78 @@ class CDPCapability(ABC):
         """Execute the capability"""
         pass
 
-class TransferCapability(CDPCapability):
-    """Capability to transfer assets"""
+# class TransferCapability(CDPCapability):
+#     """Capability to transfer assets"""
     
-    async def execute(self, agent_name: str, thread_id: str, 
-                     amount: float, asset_id: str, destination: str, 
-                     gasless: bool = False) -> Dict[str, Any]:
-        wallet = await self.wallet_manager.get_or_create_wallet(agent_name, thread_id)
-        try:
-            transfer = wallet.transfer(amount, asset_id, destination, gasless=gasless)
-            result = transfer.wait()
-            return {
-                "status": "success",
-                "transaction_hash": result.transaction_hash,
-                "amount": amount,
-                "asset_id": asset_id,
-                "destination": destination
-            }
-        except Exception as e:
-            logger.error(f"Transfer failed: {e}")
-            return {
-                "status": "error",
-                "error": str(e)
-            }
+#     async def execute(self, agent_name: str, thread_id: str, 
+#                      amount: float, asset_id: str, destination: str, 
+#                      gasless: bool = False) -> Dict[str, Any]:
+#         wallet = await self.wallet_manager.get_or_create_wallet(agent_name, thread_id)
+#         try:
+#             transfer = wallet.transfer(amount, asset_id, destination, gasless=gasless)
+#             result = transfer.wait()
+#             return {
+#                 "status": "success",
+#                 "transaction_hash": result.transaction_hash,
+#                 "amount": amount,
+#                 "asset_id": asset_id,
+#                 "destination": destination
+#             }
+#         except Exception as e:
+#             logger.error(f"Transfer failed: {e}")
+#             return {
+#                 "status": "error",
+#                 "error": str(e)
+#             }
 
-class TradeCapability(CDPCapability):
-    """Capability to trade assets"""
+# class TradeCapability(CDPCapability):
+#     """Capability to trade assets"""
     
-    async def execute(self, agent_name: str, thread_id: str,
-                     amount: float, from_asset: str, to_asset: str) -> Dict[str, Any]:
-        wallet = await self.wallet_manager.get_or_create_wallet(agent_name, thread_id)
-        try:
-            trade = wallet.trade(amount, from_asset, to_asset)
-            result = trade.wait()
-            return {
-                "status": "success",
-                "transaction_hash": result.transaction_hash,
-                "amount": amount,
-                "from_asset": from_asset,
-                "to_asset": to_asset
-            }
-        except Exception as e:
-            logger.error(f"Trade failed: {e}")
-            return {
-                "status": "error",
-                "error": str(e)
-            }
+#     async def execute(self, agent_name: str, thread_id: str,
+#                      amount: float, from_asset: str, to_asset: str) -> Dict[str, Any]:
+#         wallet = await self.wallet_manager.get_or_create_wallet(agent_name, thread_id)
+#         try:
+#             trade = wallet.trade(amount, from_asset, to_asset)
+#             result = trade.wait()
+#             return {
+#                 "status": "success",
+#                 "transaction_hash": result.transaction_hash,
+#                 "amount": amount,
+#                 "from_asset": from_asset,
+#                 "to_asset": to_asset
+#             }
+#         except Exception as e:
+#             logger.error(f"Trade failed: {e}")
+#             return {
+#                 "status": "error",
+#                 "error": str(e)
+#             }
 
-class BalanceCapability(CDPCapability):
-    """Capability to check balances"""
+# class BalanceCapability(CDPCapability):
+#     """Capability to check balances"""
     
-    async def execute(self, agent_name: str, thread_id: str,
-                     asset_id: Optional[str] = None) -> Dict[str, Any]:
-        wallet = await self.wallet_manager.get_or_create_wallet(agent_name, thread_id)
-        try:
-            if asset_id:
-                balance = wallet.balance(asset_id)
-                return {
-                    "status": "success",
-                    "balances": {asset_id: str(balance)}
-                }
-            else:
-                balances = wallet.balances()
-                return {
-                    "status": "success",
-                    "balances": {k: str(v) for k, v in balances.items()}
-                }
-        except Exception as e:
-            logger.error(f"Balance check failed: {e}")
-            return {
-                "status": "error",
-                "error": str(e)
-            }
+#     async def execute(self, agent_name: str, thread_id: str,
+#                      asset_id: Optional[str] = None) -> Dict[str, Any]:
+#         wallet = await self.wallet_manager.get_or_create_wallet(agent_name, thread_id)
+#         try:
+#             if asset_id:
+#                 balance = wallet.balance(asset_id)
+#                 return {
+#                     "status": "success",
+#                     "balances": {asset_id: str(balance)}
+#                 }
+#             else:
+#                 balances = wallet.balances()
+#                 return {
+#                     "status": "success",
+#                     "balances": {k: str(v) for k, v in balances.items()}
+#                 }
+#         except Exception as e:
+#             logger.error(f"Balance check failed: {e}")
+#             return {
+#                 "status": "error",
+#                 "error": str(e)
+#             }
 
 ### capabilities/agent_mixins.py ###
 # from typing import Dict, Any, List

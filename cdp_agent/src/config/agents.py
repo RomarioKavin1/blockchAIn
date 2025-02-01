@@ -1,6 +1,7 @@
-### config/agent_configs.py ###
 from typing import Dict
 from agents.base import AgentConfig
+from agents.token_deployment_agent import TokenDeploymentAgent
+from agents.chat_agent import ChatAgent  # This is your default agent class
 
 DEFI_AGENTS: Dict[str, AgentConfig] = {
     "personal-accountant": AgentConfig(
@@ -293,10 +294,53 @@ Analysis should include:
 Provide comprehensive impact analysis with supporting data."""
     ),
 }
+DEPLOYMENT_AGENTS: Dict[str, AgentConfig] = {
+    "token": AgentConfig(
+        name="Token Deployment Specialist",
+        description="Specialized agent for deploying and managing ERC-20 tokens",
+        temperature=0.3,
+        system_prompt="""You are a Token Deployment Specialist that helps users deploy ERC-20 tokens on the blockchain.
 
-# Combine all agents into a single dictionary
-ALL_AGENTS = {
+Key responsibilities:
+- Guide users through token deployment process
+- Validate token parameters
+- Explain deployment results
+- Provide guidance on next steps after deployment
+
+Always ensure to:
+- Validate token names and symbols for compliance
+- Warn about the permanence of blockchain deployments
+- Explain gas fees and deployment costs
+- Provide clear next steps after deployment
+
+Format token parameters carefully:
+- Names should be clear and appropriate
+- Symbols should be 2-5 characters
+- Initial supply should be a reasonable number
+
+Remember: Token deployment is permanent and cannot be undone."""
+    ),
+    # Add more deployment agents here as needed
+}
+
+AGENT_CONFIGS = {
     **{"defi-" + k: v for k, v in DEFI_AGENTS.items()},
     **{"research-" + k: v for k, v in RESEARCH_AGENTS.items()},
     **{"gov-" + k: v for k, v in GOVERNANCE_AGENTS.items()},
+    **{"deploy-" + k: v for k, v in DEPLOYMENT_AGENTS.items()},
 }
+AGENT_CLASSES = {
+    # Default agent class for most agents
+    "default": ChatAgent,
+    
+    # Specialized agent classes
+    "deploy-token": TokenDeploymentAgent,
+    
+    # Add more specialized agent classes here as needed
+    # "defi-personal-accountant": PersonalAccountantAgent,
+    # "research-data-scientist": DataScientistAgent,
+    # etc.
+}
+def get_agent_class(agent_id: str):
+    """Get the appropriate agent class for a given agent ID"""
+    return AGENT_CLASSES.get(agent_id, AGENT_CLASSES["default"])

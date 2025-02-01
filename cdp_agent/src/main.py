@@ -5,7 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from agents.base import BaseAgent, AgentRequest, AgentResponse
 from config.agents import AGENT_CONFIGS, AGENT_CLASSES
+from config.cdp_config import initialize_cdp
 
+# Initialize CDP before creating FastAPI app
+initialize_cdp()
 # Load environment variables
 load_dotenv()
 
@@ -29,10 +32,7 @@ agents: Dict[str, BaseAgent] = {}
 
 for agent_id, config in AGENT_CONFIGS.items():
     # Get the appropriate agent class
-    agent_class = AGENT_CLASSES.get(
-        getattr(config, "agent_class", "default"),
-        AGENT_CLASSES["default"]
-    )
+    agent_class = AGENT_CLASSES.get(agent_id) or AGENT_CLASSES["default"]
     agents[agent_id] = agent_class(config)
 
 @app.post("/{agent_id}/{thread_id}", response_model=AgentResponse)

@@ -1,1 +1,13 @@
-.env
+*.env
+
+*/__pycache__/*
+*/.pytest_cache/*
+*/.vscode/*
+*/.mypy_cache/*
+*/.pytest_cache/*
+*/.mypy_cache/*
+*/.coverage
+*/.DS_Store
+*/.mypy_cache/*
+*/.pytest_cache/*
+*/.vscode/*

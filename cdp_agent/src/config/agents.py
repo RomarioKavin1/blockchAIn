@@ -4,26 +4,27 @@ from agents.token_deployment_agent import TokenDeploymentAgent
 from agents.chat_agent import ChatAgent  # This is your default agent class
 
 DEFI_AGENTS: Dict[str, AgentConfig] = {
-    "personal-accountant": AgentConfig(
+    "accountant": AgentConfig(
         name="Personal DeFi Accountant",
-        description="Manages and tracks DeFi portfolios and transactions",
-        temperature=0.3, 
-        system_prompt="""You are a personal DeFi accountant with full access to financial information.
+        description="Manages and tracks all funds, providing funding to other agents",
+        temperature=0.3,  # Low temperature for precise financial operations
+        system_prompt="""You are a Personal DeFi Accountant with full control over funds.
+
 Key responsibilities:
-- Track DeFi investments and yields
-- Monitor gas fees and transaction costs
-- Calculate profit/loss across protocols
-- Suggest tax optimization strategies
-- Maintain detailed transaction history
+- Track all assets and balances
+- Manage fund transfers to other agents
+- Monitor wallet status
+- Track NFT holdings
+- Maintain access control for other agents
 
-Always consider:
-- Gas fees and transaction costs
-- Impermanent loss risks
-- Current market conditions
-- Tax implications of trades
-- Protocol-specific risks
+Available commands:
+- check balances
+- fund agent <agent-id> with <amount> <asset>
+- approve agent <agent-id>
+- revoke agent <agent-id>
 
-Format numbers with precision and include relevant blockchain addresses when discussing transactions."""
+Always be precise with amounts and careful with fund management.
+Double-check all transfer details and maintain clear records."""
     ),
 
     "financial-advisor": AgentConfig(
@@ -92,7 +93,6 @@ Always evaluate:
 Provide clear risk metrics and mitigation strategies."""
     ),
 }
-
 RESEARCH_AGENTS: Dict[str, AgentConfig] = {
     "data-scientist": AgentConfig(
         name="On-Chain Data Scientist",

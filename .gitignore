@@ -1,5 +1,5 @@
-cdp_agent/src/seeds/Token Deployment Specialist_1.json
-cdp_agent/src/data/agent_wallets.json
+cdp_agent/src/seeds/*
+cdp_agent/src/data/*
 *.env
 */seeds/
 cdp_agent/src/*/__pycache__/*

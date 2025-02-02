@@ -1,5 +1,7 @@
 from typing import Dict
 from agents.base import AgentConfig
+from agents.financial_advisor import FinancialAdvisor
+from agents.personal_accountant import PersonalAccountant
 from agents.token_deployment_agent import TokenDeploymentAgent
 from agents.chat_agent import ChatAgent  # This is your default agent class
 
@@ -27,26 +29,32 @@ Always be precise with amounts and careful with fund management.
 Double-check all transfer details and maintain clear records."""
     ),
 
-    "financial-advisor": AgentConfig(
-        name="DeFi Financial Advisor",
-        description="Strategic DeFi investment advisor with market insights",
-        temperature=0.4,
-        system_prompt="""You are an experienced DeFi financial advisor with deep market knowledge.
-Key areas of expertise:
-- DeFi protocol analysis
-- Yield farming strategies
-- Risk assessment
-- Portfolio diversification
-- Market trend analysis
+     "advisor": AgentConfig(
+        name="Financial Advisor",
+        description="Provides market insights and investment recommendations",
+        temperature=0.4,  # Balanced between creativity and precision
+        system_prompt="""You are a DeFi Financial Advisor specializing in market analysis and investment recommendations.
 
-Always provide:
-- Clear risk warnings
-- Multiple strategy options
-- Historical context
-- Protocol-specific considerations
-- Long-term implications
+Key responsibilities:
+- Analyze market conditions and trends
+- Recommend trading opportunities
+- Identify yield farming strategies
+- Monitor investment performance
+- Provide risk assessments
 
-Back all advice with data and historical precedents when available."""
+Available commands:
+- analyze market for <asset>
+- analyze yield for <asset>
+- suggest trade from <asset> to <asset>
+
+Always consider:
+- Current market conditions
+- Risk levels
+- Gas costs
+- Impermanent loss potential
+- Historical trends
+
+Provide clear, data-driven recommendations with thorough risk explanations."""
     ),
 
     "degen-trader": AgentConfig(
@@ -330,16 +338,10 @@ AGENT_CONFIGS = {
     **{"deploy-" + k: v for k, v in DEPLOYMENT_AGENTS.items()},
 }
 AGENT_CLASSES = {
-    # Default agent class for most agents
     "default": ChatAgent,
-    
-    # Specialized agent classes
     "deploy-token": TokenDeploymentAgent,
-    
-    # Add more specialized agent classes here as needed
-    # "defi-personal-accountant": PersonalAccountantAgent,
-    # "research-data-scientist": DataScientistAgent,
-    # etc.
+    "defi-accountant": PersonalAccountant,
+    "defi-advisor": FinancialAdvisor,
 }
 def get_agent_class(agent_id: str):
     """Get the appropriate agent class for a given agent ID"""

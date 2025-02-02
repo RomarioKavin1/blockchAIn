@@ -1,11 +1,9 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List
 from agents.base import BaseAgent, AgentConfig, AgentRequest, AgentResponse
 from capabilities.agent_mixins import CDPAgentMixin
 from capabilities.asset_capabilities import BalanceCapability, TradeCapability
 from capabilities.pyth_capabilities import PythPriceCapability, PythPriceFeedIDCapability
 from capabilities.morpho_capabilities import MorphoDepositCapability, MorphoWithdrawCapability
-import re
-import json
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,311 +21,248 @@ class FinancialAdvisorMixin(CDPAgentMixin):
         ])
 
 class FinancialAdvisor(BaseAgent, FinancialAdvisorMixin):
-    """Financial Advisor agent that provides market insights and investment suggestions"""
+    """Financial Advisor agent that provides market insights and recommendations"""
     
     def __init__(self, config: AgentConfig):
         BaseAgent.__init__(self, config)
         FinancialAdvisorMixin.__init__(self)
-        
-    async def analyze_market(self, thread_id: str, asset_id: str) -> Dict[str, Any]:
-        """Analyze market data for an asset"""
+        self.common_assets = {
+            'eth': 'ETH', 'ethereum': 'ETH',
+            'btc': 'BTC', 'bitcoin': 'BTC',
+            'usdc': 'USDC',
+            'usdt': 'USDT',
+            'sol': 'SOL', 'solana': 'SOL',
+            'matic': 'MATIC', 'polygon': 'MATIC'
+        }
+
+    async def get_market_context(self, thread_id: str, assets: List[str]) -> Dict[str, Any]:
+        """Get comprehensive market context for assets"""
+        results = {}
         try:
-            # Get price feed ID
-            feed_result = await self.execute_capability(
-                "PythPriceFeedIDCapability",
-                self.config.name,
-                thread_id,
-                symbol=asset_id
-            )
-            
-            if feed_result["status"] != "success":
-                raise ValueError(f"Failed to get price feed for {asset_id}")
-                
-            # Get price data
-            price_result = await self.execute_capability(
-                "PythPriceCapability",
-                self.config.name,
-                thread_id,
-                price_feed_id=feed_result["feed_id"]
-            )
-            
-            if price_result["status"] != "success":
-                raise ValueError(f"Failed to get price data for {asset_id}")
-
-            return {
-                "status": "success",
-                "asset": asset_id,
-                "price": price_result["price"],
-                "feed_id": feed_result["feed_id"],
-                "confidence": price_result.get("confidence"),
-                "last_updated": price_result.get("publish_time")
-            }
-        except Exception as e:
-            logger.error(f"Failed to analyze market: {e}")
-            return {"status": "error", "error": str(e)}
-
-    async def analyze_yield_opportunities(self, thread_id: str, 
-                                        asset_id: str) -> Dict[str, Any]:
-        """Analyze yield opportunities for an asset"""
-        try:
-            # Get current balance
-            balance_result = await self.execute_capability(
-                "BalanceCapability",
-                self.config.name,
-                thread_id,
-                asset_id=asset_id
-            )
-            
-            # Get market data
-            market_data = await self.analyze_market(thread_id, asset_id)
-            
-            if market_data["status"] != "success":
-                raise ValueError(f"Failed to get market data for {asset_id}")
-
-            return {
-                "status": "success",
-                "asset": asset_id,
-                "balance": balance_result.get("balance"),
-                "current_price": market_data["price"],
-                "opportunities": [
-                    {
-                        "protocol": "Morpho",
-                        "apy": "Calculate APY here",
-                        "risk_level": "Calculate risk here"
-                    }
-                ]
-            }
-        except Exception as e:
-            logger.error(f"Failed to analyze yield opportunities: {e}")
-            return {"status": "error", "error": str(e)}
-
-    def _parse_command(self, message: str) -> Dict[str, Any]:
-        """Parse commands from message"""
-        # Analyze market
-        market_match = re.search(r'analyze\s+market\s+for\s+([a-zA-Z]+)', message, re.I)
-        if market_match:
-            return {
-                "command": "analyze_market",
-                "asset_id": market_match.group(1).lower()
-            }
-            
-        # Analyze yield
-        yield_match = re.search(r'analyze\s+yield\s+for\s+([a-zA-Z]+)', message, re.I)
-        if yield_match:
-            return {
-                "command": "analyze_yield",
-                "asset_id": yield_match.group(1).lower()
-            }
-            
-        # Suggest trade
-        trade_match = re.search(
-            r'suggest\s+trade\s+from\s+([a-zA-Z]+)\s+to\s+([a-zA-Z]+)', 
-            message, 
-            re.I
-        )
-        if trade_match:
-            return {
-                "command": "suggest_trade",
-                "from_asset": trade_match.group(1).lower(),
-                "to_asset": trade_match.group(2).lower()
-            }
-            
-        return {"command": "unknown"}
-    async def analyze_trade_opportunity(self, 
-                                      from_analysis: Dict[str, Any], 
-                                      to_analysis: Dict[str, Any]) -> str:
-        """Analyze trade opportunity and provide detailed recommendation"""
-        try:
-            from_asset = from_analysis["asset"].upper()
-            to_asset = to_analysis["asset"].upper()
-            from_price = float(from_analysis["price"])
-            to_price = float(to_analysis["price"])
-            
-            # For ETH to USDC analysis
-            if from_asset == "ETH" and to_asset == "USDC":
-                eth_value_in_usdc = from_price * 1  # 1 ETH value in USDC
-                
-                analysis = (
-                    f"Trade Analysis: {from_asset} → {to_asset}\n\n"
-                    f"Current Prices:\n"
-                    f"• {from_asset}: ${from_price:,.2f}\n"
-                    f"• {to_asset}: ${to_price:,.2f}\n\n"
-                    f"Trade Value:\n"
-                    f"• 1 ETH = {eth_value_in_usdc:,.2f} USDC\n\n"
-                    f"Market Analysis:\n"
+            for asset in assets:
+                # Get price feed and data
+                feed = await self.execute_capability(
+                    "PythPriceFeedIDCapability",
+                    self.config.name,
+                    thread_id,
+                    symbol=asset
                 )
-
-                # Add market insights
-                if from_asset == "ETH":
-                    confidence = float(from_analysis["confidence"]) / 1e8
-                    analysis += (
-                        f"• Price Confidence: ±${confidence:,.2f}\n"
-                        f"• Market Volatility: "
-                        f"{'High' if confidence > 100 else 'Moderate' if confidence > 50 else 'Low'}\n"
+                
+                if feed["status"] == "success":
+                    price_data = await self.execute_capability(
+                        "PythPriceCapability",
+                        self.config.name,
+                        thread_id,
+                        price_feed_id=feed["feed_id"]
                     )
+                    
+                    if price_data["status"] == "success":
+                        # Get user's balance for context
+                        balance = await self.execute_capability(
+                            "BalanceCapability",
+                            self.config.name,
+                            thread_id,
+                            asset_id=asset
+                        )
+                        
+                        # Get yield opportunities
+                        yield_data = await self.execute_capability(
+                            "MorphoDepositCapability",
+                            self.config.name,
+                            thread_id,
+                            asset_id=asset
+                        )
+                        
+                        results[asset] = {
+                            "price": price_data["price"],
+                            "confidence": price_data.get("confidence"),
+                            "balance": balance.get("balance", 0),
+                            "yield_opportunities": yield_data.get("opportunities", [])
+                        }
 
-                # Add recommendation
-                analysis += "\nRecommendation:\n"
-                if to_asset == "USDC":
-                    analysis += "• Consider partial conversion to USDC if you need stable value\n"
-                    analysis += "• Keep some ETH exposure for potential upside\n"
-                    analysis += "• Suggested split: 70% ETH / 30% USDC for balanced risk\n"
-
-                # Add action steps
-                analysis += "\nSuggested Actions:\n"
-                analysis += "1. Start with a small test transaction\n"
-                analysis += "2. Monitor gas fees for optimal timing\n"
-                analysis += "3. Consider using limit orders if available\n"
-
-                # Add risk warnings
-                analysis += "\nRisk Considerations:\n"
-                analysis += "• Market volatility may affect execution price\n"
-                analysis += "• Consider transaction costs (gas fees)\n"
-                analysis += "• Monitor slippage during large trades\n"
-
-            # For USDC to ETH analysis
-            elif from_asset == "USDC" and to_asset == "ETH":
-                usdc_value_in_eth = 1 / from_price  # 1 USDC value in ETH
-                
-                analysis = (
-                    f"Trade Analysis: {from_asset} → {to_asset}\n\n"
-                    f"Current Prices:\n"
-                    f"• {from_asset}: ${to_price:,.2f}\n"
-                    f"• {to_asset}: ${from_price:,.2f}\n\n"
-                    f"Trade Value:\n"
-                    f"• 1000 USDC = {(1000 * usdc_value_in_eth):.4f} ETH\n\n"
-                    f"Market Analysis:\n"
-                )
-
-                # Add market insights
-                confidence = float(to_analysis["confidence"]) / 1e8
-                analysis += (
-                    f"• Price Confidence: ±${confidence:,.2f}\n"
-                    f"• Market Volatility: "
-                    f"{'High' if confidence > 100 else 'Moderate' if confidence > 50 else 'Low'}\n"
-                )
-
-                # Add recommendation
-                analysis += "\nRecommendation:\n"
-                analysis += "• Consider DCA (Dollar Cost Averaging) into ETH\n"
-                analysis += "• Split large trades into smaller portions\n"
-                analysis += "• Suggested entry: 20% now, 80% over next 4 weeks\n"
-
-                # Add action steps
-                analysis += "\nSuggested Actions:\n"
-                analysis += "1. Set up regular DCA intervals\n"
-                analysis += "2. Monitor gas fees for optimal timing\n"
-                analysis += "3. Consider limit orders for better entry\n"
-
-                # Add risk warnings
-                analysis += "\nRisk Considerations:\n"
-                analysis += "• ETH price volatility risk\n"
-                analysis += "• Consider transaction costs (gas fees)\n"
-                analysis += "• Monitor market conditions regularly\n"
-
-            else:
-                # Generic analysis for other pairs
-                analysis = (
-                    f"Trade Analysis: {from_asset} → {to_asset}\n\n"
-                    f"Current Prices:\n"
-                    f"• {from_asset}: ${from_price:,.2f}\n"
-                    f"• {to_asset}: ${to_price:,.2f}\n\n"
-                    "Generic Trading Advice:\n"
-                    "• Monitor market conditions\n"
-                    "• Consider transaction costs\n"
-                    "• Start with small test transactions\n"
-                )
-
-            return analysis
+            return {
+                "status": "success",
+                "data": results
+            }
 
         except Exception as e:
-            logger.error(f"Error analyzing trade opportunity: {e}")
-            return "Failed to analyze trade opportunity"
+            logger.error(f"Failed to get market context: {e}")
+            return {"status": "error", "error": str(e)}
 
+    def _identify_intent(self, message: str) -> Dict[str, Any]:
+        """Identify user intent from natural language"""
+        message = message.lower()
+        
+        # Detect mentioned assets
+        mentioned_assets = []
+        for token, standard_name in self.common_assets.items():
+            if token in message:
+                mentioned_assets.append(standard_name)
+
+        # Default to major assets if none mentioned
+        if not mentioned_assets:
+            mentioned_assets = ['ETH', 'BTC']
+
+        # Intent classification
+        if any(word in message for word in ['price', 'worth', 'value', 'cost', 'market']):
+            return {
+                "intent": "market_analysis",
+                "assets": mentioned_assets,
+                "context": "price_focused"
+            }
+            
+        if any(word in message for word in ['trade', 'swap', 'exchange', 'convert']):
+            return {
+                "intent": "trade_suggestion",
+                "assets": mentioned_assets,
+                "context": "trading"
+            }
+            
+        if any(word in message for word in ['yield', 'earn', 'apy', 'farm', 'interest']):
+            return {
+                "intent": "yield_analysis",
+                "assets": mentioned_assets,
+                "context": "yield_focused"
+            }
+            
+        if any(word in message for word in ['risk', 'safe', 'protect', 'secure', 'worried']):
+            return {
+                "intent": "risk_assessment",
+                "assets": mentioned_assets,
+                "context": "risk_focused"
+            }
+            
+        if any(word in message for word in ['what', 'suggest', 'recommend', 'should', 'advice']):
+            return {
+                "intent": "general_advice",
+                "assets": mentioned_assets,
+                "context": "advisory"
+            }
+
+        return {
+            "intent": "market_update",
+            "assets": mentioned_assets,
+            "context": "general"
+        }
 
     async def process(self, request: AgentRequest, thread_id: str) -> AgentResponse:
-        """Process incoming requests"""
+        """Process requests in a conversational manner"""
         try:
-            # Parse command
-            parsed = self._parse_command(request.message)
-            command = parsed.get("command", "unknown")
+            intent_data = self._identify_intent(request.message)
+            intent = intent_data["intent"]
+            assets = intent_data["assets"]
+            context = intent_data["context"]
+
+            # Get market context for all relevant assets
+            market_data = await self.get_market_context(thread_id, assets)
             
-            if command == "analyze_market":
-                result = await self.analyze_market(thread_id, parsed["asset_id"])
-                if result["status"] == "success":
-                    content = (
-                        f"Market Analysis for {parsed['asset_id'].upper()}:\n"
-                        f"Current Price: ${result['price']}\n"
-                    )
-                    if result.get("confidence"):
-                        content += f"Confidence: {result['confidence']}\n"
-                    if result.get("last_updated"):
-                        content += f"Last Updated: {result['last_updated']}\n"
-                else:
-                    content = f"Failed to analyze market: {result.get('error')}"
-                    
-                return AgentResponse(content=content, metadata=result)
-                
-            elif command == "analyze_yield":
-                result = await self.analyze_yield_opportunities(
-                    thread_id, 
-                    parsed["asset_id"]
-                )
-                if result["status"] == "success":
-                    content = (
-                        f"Yield Analysis for {parsed['asset_id'].upper()}:\n"
-                        f"Current Price: ${result['current_price']}\n"
-                    )
-                    if result.get("balance"):
-                        content += f"Your Balance: {result['balance']}\n"
-                    content += "\nAvailable Opportunities:\n"
-                    for opp in result.get("opportunities", []):
-                        content += (
-                            f"- {opp['protocol']}: {opp['apy']} APY "
-                            f"(Risk: {opp['risk_level']})\n"
-                        )
-                else:
-                    content = f"Failed to analyze yield: {result.get('error')}"
-                    
-                return AgentResponse(content=content, metadata=result)
-                
-            elif command == "suggest_trade":
-                from_analysis = await self.analyze_market(
-                    thread_id, 
-                    parsed["from_asset"]
-                )
-                to_analysis = await self.analyze_market(
-                    thread_id, 
-                    parsed["to_asset"]
-                )
-                
-                if from_analysis["status"] == "success" and to_analysis["status"] == "success":
-                    content = await self.analyze_trade_opportunity(from_analysis, to_analysis)
-                else:
-                    content = "Failed to analyze trade opportunity"
-                
-                return AgentResponse(
-                    content=content,
-                    metadata={
-                        "from_analysis": from_analysis,
-                        "to_analysis": to_analysis
-                    }
-                )
-                
-            else:
+            if market_data["status"] != "success":
                 return AgentResponse(
                     content=(
-                        "Available commands:\n"
-                        "- analyze market for <asset>\n"
-                        "- analyze yield for <asset>\n"
-                        "- suggest trade from <asset> to <asset>"
+                        "I'm having trouble accessing some market data at the moment. "
+                        "Could you please specify which aspect of the market you're most interested in? "
+                        "I can focus on prices, trading opportunities, or yield strategies."
                     ),
-                    metadata={"status": "help"}
+                    metadata={"status": "error", "error": market_data.get("error")}
                 )
+
+            data = market_data["data"]
+            
+            if intent == "market_analysis":
+                content = "Based on current market data:\n\n"
+                for asset, info in data.items():
+                    content += (
+                        f"{asset} is trading at ${float(info['price']):,.2f}. "
+                        f"Your current position: {info['balance']} {asset}. "
+                    )
+                    
+                if context == "price_focused":
+                    content += "\n\nWould you like me to analyze any specific trading opportunities or yield strategies?"
+
+            elif intent == "trade_suggestion":
+                if len(assets) >= 2:
+                    asset1, asset2 = assets[:2]
+                    price1 = float(data[asset1]["price"])
+                    price2 = float(data[asset2]["price"])
+                    
+                    content = (
+                        f"Looking at {asset1}/{asset2} pair:\n\n"
+                        f"{asset1}: ${price1:,.2f}\n"
+                        f"{asset2}: ${price2:,.2f}\n\n"
+                        f"Given current market conditions, "
+                    )
+                    
+                    # Add trading suggestion based on user's holdings
+                    if data[asset1]["balance"] > 0:
+                        content += (
+                            f"with your {data[asset1]['balance']} {asset1} position, "
+                            f"you might consider a partial conversion to {asset2} "
+                            f"to diversify. Would you like a detailed analysis of this trade?"
+                        )
+                    else:
+                        content += (
+                            f"you might consider starting with a small position. "
+                            f"Would you like me to analyze optimal entry points?"
+                        )
+                else:
+                    content = "Which assets are you interested in trading? I can provide specific analysis for any pair."
+
+            elif intent == "yield_analysis":
+                content = "Current yield opportunities:\n\n"
+                for asset, info in data.items():
+                    yield_opps = info.get("yield_opportunities", [])
+                    if yield_opps:
+                        content += f"{asset} Opportunities:\n"
+                        for opp in yield_opps:
+                            content += f"• {opp['protocol']}: {opp['apy']} APY\n"
+                    else:
+                        content += f"No significant yield opportunities found for {asset} at the moment.\n"
                 
+                content += "\nWould you like a risk analysis of any specific yield strategy?"
+
+            elif intent == "risk_assessment":
+                content = "Risk Analysis:\n\n"
+                for asset, info in data.items():
+                    confidence = float(info.get("confidence", 0)) / 1e8
+                    volatility = confidence / float(info["price"]) * 100
+                    
+                    content += (
+                        f"{asset}:\n"
+                        f"• Price: ${float(info['price']):,.2f}\n"
+                        f"• Volatility: {'High' if volatility > 5 else 'Moderate' if volatility > 2 else 'Low'}\n"
+                        f"• Position Size: {info['balance']} {asset}\n\n"
+                    )
+                
+                content += "Would you like specific risk mitigation recommendations?"
+
+            else:
+                # General market update
+                content = "Here's your market update:\n\n"
+                for asset, info in data.items():
+                    content += (
+                        f"{asset} is at ${float(info['price']):,.2f}. "
+                        f"You're holding {info['balance']} {asset}.\n"
+                    )
+                    
+                content += "\nWhat aspect would you like me to analyze in detail?"
+
+            return AgentResponse(
+                content=content,
+                metadata={
+                    "intent": intent,
+                    "context": context,
+                    "market_data": market_data,
+                    "status": "success"
+                }
+            )
+
         except Exception as e:
             logger.error(f"Error processing request: {e}")
             return AgentResponse(
-                content=f"An error occurred: {str(e)}",
+                content=(
+                    "I'm encountering some issues with market analysis at the moment. "
+                    "Could you specify what information you're most interested in? "
+                    "I can focus on specific assets or aspects of the market."
+                ),
                 metadata={"status": "error", "error": str(e)}
             )

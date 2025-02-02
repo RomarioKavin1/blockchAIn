@@ -1,12 +1,11 @@
-from typing import Dict, Any, Optional
+### src/agents/personal_accountant.py ###
+from typing import Dict, Any, List
 from agents.base import BaseAgent, AgentConfig, AgentRequest, AgentResponse
 from capabilities.agent_mixins import CDPAgentMixin
 from capabilities.asset_capabilities import BalanceCapability, TransferCapability
 from capabilities.wallet_capabilities import WalletDetailsCapability
 from capabilities.nft_capabilities import NFTBalanceCapability
-import re
 import logging
-import json
 
 logger = logging.getLogger(__name__)
 
@@ -26,188 +25,223 @@ class PersonalAccountant(BaseAgent, PersonalAccountantMixin):
     def __init__(self, config: AgentConfig):
         BaseAgent.__init__(self, config)
         PersonalAccountantMixin.__init__(self)
-        self.approved_agents = set()  # Set of approved agent IDs
-        
-    async def check_balances(self, thread_id: str) -> Dict[str, Any]:
-        """Check all balances including tokens and NFTs"""
+        self.approved_agents = set()
+        self.common_assets = {
+            'eth': 'ETH', 'ethereum': 'ETH',
+            'usdc': 'USDC',
+            'usdt': 'USDT',
+            'btc': 'BTC', 'bitcoin': 'BTC'
+        }
+
+    async def get_portfolio_summary(self, thread_id: str) -> Dict[str, Any]:
+        """Get comprehensive portfolio summary"""
         try:
             # Get token balances
-            balance_result = await self.execute_capability(
+            token_result = await self.execute_capability(
                 "BalanceCapability",
                 self.config.name,
                 thread_id
             )
             
-            # Get NFT balances
-            nft_result = await self.execute_capability(
-                "NFTBalanceCapability",
-                self.config.name,
-                thread_id
-            )
+            # For NFTs, we need specific contract addresses
+            # This is a placeholder - you would need to maintain a list of NFT contracts you want to track
+            nft_contracts = [
+                "0x123...",  # Example NFT contract address
+            ]
             
-            return {
-                "tokens": balance_result.get("balances", {}),
-                "nfts": nft_result.get("balances", {})
-            }
-        except Exception as e:
-            logger.error(f"Failed to check balances: {e}")
-            return {"error": str(e)}
+            nft_balances = {}
+            for contract in nft_contracts:
+                nft_result = await self.execute_capability(
+                    "NFTBalanceCapability",
+                    self.config.name,
+                    thread_id,
+                    contract_address=contract
+                )
+                if nft_result.get("status") == "success":
+                    nft_balances[contract] = nft_result.get("balance", 0)
 
-    async def approve_agent(self, agent_id: str) -> bool:
-        """Add an agent to the approved list"""
-        self.approved_agents.add(agent_id)
-        return True
-
-    async def revoke_agent(self, agent_id: str) -> bool:
-        """Remove an agent from the approved list"""
-        if agent_id in self.approved_agents:
-            self.approved_agents.remove(agent_id)
-            return True
-        return False
-
-    async def fund_agent(self, thread_id: str, agent_id: str, 
-                        amount: float, asset_id: str) -> Dict[str, Any]:
-        """Transfer funds to another agent"""
-        if agent_id not in self.approved_agents:
-            return {
-                "status": "error",
-                "error": "Agent not approved for funding"
-            }
-            
-        try:
-            # Get target agent's wallet details
-            agent_wallet = await self.execute_capability(
+            # Get wallet status
+            wallet_result = await self.execute_capability(
                 "WalletDetailsCapability",
-                agent_id,
+                self.config.name,
                 thread_id
             )
-            
-            if agent_wallet.get("status") != "success":
-                raise ValueError("Failed to get agent wallet details")
-                
-            # Transfer funds
-            transfer_result = await self.execute_capability(
-                "TransferCapability",
-                self.config.name,
-                thread_id,
-                amount=amount,
-                asset_id=asset_id,
-                destination=agent_wallet["address"]
-            )
-            
-            return transfer_result
-        except Exception as e:
-            logger.error(f"Failed to fund agent: {e}")
+
+            # Return combined results
             return {
-                "status": "error",
-                "error": str(e)
+                "status": "success",
+                "tokens": token_result.get("balances", {}),
+                "nfts": nft_balances,
+                "wallet": wallet_result
             }
 
-    def _parse_command(self, message: str) -> Dict[str, Any]:
-        """Parse commands from message"""
-        # Check balances
-        if re.search(r'check\s+balances?', message, re.I):
-            return {"command": "check_balances"}
-            
-        # Fund agent command
-        fund_match = re.search(
-            r'fund\s+agent\s+([a-zA-Z0-9-]+)\s+with\s+(\d+\.?\d*)\s+([a-zA-Z]+)', 
-            message, 
-            re.I
-        )
-        if fund_match:
+        except Exception as e:
+            logger.error(f"Failed to get portfolio summary: {e}")
             return {
-                "command": "fund_agent",
-                "agent_id": fund_match.group(1),
-                "amount": float(fund_match.group(2)),
-                "asset_id": fund_match.group(3).lower()
+                "status": "error", 
+                "error": str(e),
+                "tokens": {},
+                "nfts": {},
+                "wallet": {}
             }
-            
-        # Approve agent command
-        approve_match = re.search(r'approve\s+agent\s+([a-zA-Z0-9-]+)', message, re.I)
-        if approve_match:
-            return {
-                "command": "approve_agent",
-                "agent_id": approve_match.group(1)
-            }
-            
-        # Revoke agent command
-        revoke_match = re.search(r'revoke\s+agent\s+([a-zA-Z0-9-]+)', message, re.I)
-        if revoke_match:
-            return {
-                "command": "revoke_agent",
-                "agent_id": revoke_match.group(1)
-            }
-            
-        return {"command": "unknown"}
+    def _identify_intent(self, message: str) -> Dict[str, Any]:
+        """Identify user intent from natural language"""
+        message = message.lower()
+        
+        # Detect mentioned assets
+        mentioned_assets = []
+        for token, standard_name in self.common_assets.items():
+            if token in message:
+                mentioned_assets.append(standard_name)
+
+        # Detect agents
+        agent_mention = None
+        if "agent" in message:
+            # Try to find agent ID in message
+            words = message.split()
+            for i, word in enumerate(words):
+                if word == "agent" and i + 1 < len(words):
+                    agent_mention = words[i + 1]
+
+        # Intent classification
+        intents = {
+            "check_balance": [
+                'balance', 'holding', 'have', 'own', 'worth', 'portfolio'
+            ],
+            "transfer_funds": [
+                'send', 'transfer', 'move', 'give', 'fund', 'allocate'
+            ],
+            "agent_management": [
+                'approve', 'revoke', 'allow', 'permission', 'access'
+            ],
+            "wallet_status": [
+                'wallet', 'address', 'account', 'status'
+            ]
+        }
+
+        # Check each intent
+        for intent, keywords in intents.items():
+            if any(word in message for word in keywords):
+                return {
+                    "intent": intent,
+                    "assets": mentioned_assets,
+                    "agent": agent_mention
+                }
+
+        # Default to portfolio overview if no specific intent
+        return {
+            "intent": "portfolio_overview",
+            "assets": mentioned_assets,
+            "agent": agent_mention
+        }
 
     async def process(self, request: AgentRequest, thread_id: str) -> AgentResponse:
-        """Process incoming requests"""
+        """Process requests in a conversational manner"""
         try:
-            # Parse command from message
-            parsed = self._parse_command(request.message)
-            command = parsed.get("command", "unknown")
+            intent_data = self._identify_intent(request.message)
+            intent = intent_data["intent"]
+            assets = intent_data["assets"]
+            agent = intent_data["agent"]
+
+            # Always get portfolio summary for context
+            portfolio = await self.get_portfolio_summary(thread_id)
             
-            if command == "check_balances":
-                balances = await self.check_balances(thread_id)
-                return AgentResponse(
-                    content=f"Current balances:\n{json.dumps(balances, indent=2)}",
-                    metadata=balances
-                )
-                
-            elif command == "fund_agent":
-                result = await self.fund_agent(
-                    thread_id,
-                    parsed["agent_id"],
-                    parsed["amount"],
-                    parsed["asset_id"]
-                )
-                
-                if result.get("status") == "success":
+            if portfolio["status"] == "error":
+                logger.warning(f"Portfolio fetch error: {portfolio['error']}")
+                # Continue with available data
+
+            if intent == "check_balance":
+                if assets:
+                    # Specific asset balance check
+                    balances = portfolio.get("tokens", {})
+                    responses = []
+                    for asset in assets:
+                        balance = balances.get(asset.lower(), 0)
+                        responses.append(f"Your {asset} balance is {balance}")
+                    
+                    content = ". ".join(responses)
+                    content += "\n\nWould you like to see your other holdings as well?"
+                else:
+                    # Full portfolio overview
+                    token_balances = portfolio.get("tokens", {})
+                    nft_balances = portfolio.get("nfts", {})
+                    
+                    content = "Here's your current portfolio summary:\n\n"
+                    
+                    if token_balances:
+                        content += "Token Holdings:\n"
+                        for token, balance in token_balances.items():
+                            content += f"• {token.upper()}: {balance}\n"
+                    else:
+                        content += "No token holdings found.\n"
+                    
+                    if nft_balances:
+                        content += "\nNFT Holdings:\n"
+                        for contract, balance in nft_balances.items():
+                            content += f"• Collection {contract[:6]}...{contract[-4:]}: {balance}\n"
+
+            elif intent == "transfer_funds" and agent:
+                if agent not in self.approved_agents:
                     content = (
-                        f"Successfully funded agent {parsed['agent_id']} "
-                        f"with {parsed['amount']} {parsed['asset_id']}"
+                        f"I notice you're trying to transfer funds to {agent}. "
+                        f"This agent isn't currently approved. Would you like me to "
+                        f"set up approval first? I can then help with the transfer."
                     )
                 else:
-                    content = f"Failed to fund agent: {result.get('error')}"
+                    amount = 0.1  # Default amount, should be extracted from message
+                    asset = assets[0] if assets else "ETH"
                     
-                return AgentResponse(content=content, metadata=result)
-                
-            elif command == "approve_agent":
-                success = await self.approve_agent(parsed["agent_id"])
-                content = (
-                    f"Agent {parsed['agent_id']} {'approved' if success else 'approval failed'}"
-                )
-                return AgentResponse(
-                    content=content,
-                    metadata={"status": "success" if success else "error"}
-                )
-                
-            elif command == "revoke_agent":
-                success = await self.revoke_agent(parsed["agent_id"])
-                content = (
-                    f"Agent {parsed['agent_id']} {'revoked' if success else 'not found'}"
-                )
-                return AgentResponse(
-                    content=content,
-                    metadata={"status": "success" if success else "error"}
-                )
-                
+                    content = (
+                        f"I can help transfer funds to {agent}. "
+                        f"I see you have {portfolio['tokens'].get(asset.lower(), 0)} {asset}. "
+                        f"How much would you like to transfer?"
+                    )
+
+            elif intent == "agent_management":
+                if agent:
+                    if "revoke" in request.message.lower():
+                        self.approved_agents.discard(agent)
+                        content = f"I've revoked {agent}'s access. They can no longer receive funds."
+                    else:
+                        self.approved_agents.add(agent)
+                        content = (
+                            f"I've approved {agent} for fund transfers. "
+                            f"You can now allocate funds to them as needed. "
+                            f"Would you like to set up a transfer now?"
+                        )
+                else:
+                    content = (
+                        "Currently approved agents:\n" +
+                        "\n".join(f"• {agent}" for agent in self.approved_agents)
+                    )
+
             else:
-                return AgentResponse(
-                    content=(
-                        "Available commands:\n"
-                        "- check balances\n"
-                        "- fund agent <agent-id> with <amount> <asset>\n"
-                        "- approve agent <agent-id>\n"
-                        "- revoke agent <agent-id>"
-                    ),
-                    metadata={"status": "help"}
+                # Default portfolio overview
+                content = (
+                    "I can help you manage your portfolio and handle fund transfers. "
+                    "Would you like to:\n"
+                    "• See your current holdings?\n"
+                    "• Transfer funds to another agent?\n"
+                    "• Check specific asset balances?\n"
+                    "Just let me know what you need assistance with."
                 )
-                
+
+            return AgentResponse(
+                content=content,
+                metadata={
+                    "intent": intent,
+                    "portfolio": portfolio,
+                    "status": "success"
+                }
+            )
+
         except Exception as e:
             logger.error(f"Error processing request: {e}")
             return AgentResponse(
-                content=f"An error occurred: {str(e)}",
+                content=(
+                    "I encountered an issue while processing your request. "
+                    "Could you please specify what information you're looking for? "
+                    "I can check balances, handle transfers, or provide a portfolio overview."
+                ),
                 metadata={"status": "error", "error": str(e)}
             )

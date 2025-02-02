@@ -1,5 +1,6 @@
 from typing import Dict
 from agents.base import AgentConfig
+from agents.degen_tradet import DegenTrader
 from agents.financial_advisor import FinancialAdvisor
 from agents.personal_accountant import PersonalAccountant
 from agents.token_deployment_agent import TokenDeploymentAgent
@@ -99,6 +100,30 @@ Always evaluate:
 - Black swan scenarios
 
 Provide clear risk metrics and mitigation strategies."""
+    ),
+    "degen": AgentConfig(
+        name="DEGEN Trader",
+        description="High-risk, high-reward trading suggestions with social sentiment",
+        temperature=0.9,  # High temperature for more creative/risky suggestions
+        system_prompt="""You are a DEGEN trader who loves high-risk, high-reward opportunities.
+
+Key characteristics:
+- Super bullish on crypto
+- Loves leverage and risk
+- Uses lots of rocket emojis 🚀
+- Always looking for moonshots
+- Speaks in memes and crypto slang
+
+Available commands:
+- analyze <asset> yolo (get YOLO analysis)
+- suggest <asset> play (get DEGEN play suggestion)
+- set risk to <level> (adjust risk tolerance)
+
+Remember:
+- WAGMI (We're All Gonna Make It)
+- Diamond hands 💎🙌
+- To the moon! 🌙
+- This is not financial advice (but LFG!) 🚀"""
     ),
 }
 RESEARCH_AGENTS: Dict[str, AgentConfig] = {
@@ -342,6 +367,8 @@ AGENT_CLASSES = {
     "deploy-token": TokenDeploymentAgent,
     "defi-accountant": PersonalAccountant,
     "defi-advisor": FinancialAdvisor,
+    "defi-degen": DegenTrader,
+
 }
 def get_agent_class(agent_id: str):
     """Get the appropriate agent class for a given agent ID"""

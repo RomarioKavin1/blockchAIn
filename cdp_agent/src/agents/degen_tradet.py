@@ -32,6 +32,65 @@ class DegenTrader(BaseAgent, DegenMixin):
         DegenMixin.__init__(self)
         self.risk_level = "YOLO"  # Default risk level
         
+        # Token mapping
+        self.asset_tokens = {
+            'btc': 'btc', 'bitcoin': 'btc',
+            'eth': 'eth', 'ethereum': 'eth',
+            'usdc': 'usdc', 'usdt': 'usdt',
+            'sol': 'sol', 'solana': 'sol',
+            'matic': 'matic', 'polygon': 'matic',
+            'doge': 'doge', 'dogecoin': 'doge'
+        }
+
+    def _identify_intent(self, message: str) -> Dict[str, Any]:
+        """Identify the user's intent from natural language"""
+        message = message.lower()
+
+        # Look for assets mentioned in the message
+        mentioned_assets = []
+        for token, asset_id in self.asset_tokens.items():
+            if token in message:
+                mentioned_assets.append(asset_id)
+        
+        # Intent classification with example phrases
+        intents = {
+            "price_check": [
+                'price', 'worth', 'value', 'cost', 'how much', 'what is', 'trading at'
+            ],
+            "degen_play": [
+                'moon', 'pump', 'ape', 'yolo', 'all in', 'fomo', 'send it', 'lfg',
+                'bullish', 'leverage', '100x', 'massive', 'explosion'
+            ],
+            "opportunity_analysis": [
+                'opportunity', 'chance', 'potential', 'possible', 'good time',
+                'should i', 'what about', 'thinking about', 'consider'
+            ],
+            "risk_assessment": [
+                'risk', 'safe', 'dangerous', 'careful', 'worried', 'scared',
+                'concerned', 'downside'
+            ]
+        }
+
+        # Check each intent
+        for intent, keywords in intents.items():
+            if any(word in message for word in keywords):
+                return {
+                    "intent": intent,
+                    "assets": mentioned_assets
+                }
+
+        # If no specific intent but assets mentioned
+        if mentioned_assets:
+            return {
+                "intent": "general_analysis",
+                "assets": mentioned_assets
+            }
+
+        return {
+            "intent": "unknown",
+            "assets": []
+        }
+        
     async def analyze_yolo_opportunity(self, thread_id: str, 
                                      asset_id: str) -> Dict[str, Any]:
         """Analyze high-risk trading opportunity"""
@@ -54,6 +113,9 @@ class DegenTrader(BaseAgent, DegenMixin):
                 price_feed_id=price_feed["feed_id"]
             )
             
+            if price_data["status"] != "success":
+                raise ValueError(f"Failed to get price for {asset_id}")
+
             # Get current balance
             balance = await self.execute_capability(
                 "BalanceCapability",
@@ -63,9 +125,6 @@ class DegenTrader(BaseAgent, DegenMixin):
             )
             
             # Generate DEGEN analysis
-            confidence = float(price_data.get("confidence", 0)) / 1e8
-            volatility_score = confidence / float(price_data["price"]) * 100
-            
             meme_potential = random.choice([
                 "🚀 TO THE MOON",
                 "💎 DIAMOND HANDS",
@@ -87,7 +146,6 @@ class DegenTrader(BaseAgent, DegenMixin):
                 "asset": asset_id,
                 "price": price_data["price"],
                 "balance": balance.get("balance"),
-                "volatility": volatility_score,
                 "meme_potential": meme_potential,
                 "leverage": leverage_suggestion,
                 "risk_level": "EXTREME 🔥"
@@ -133,105 +191,95 @@ class DegenTrader(BaseAgent, DegenMixin):
             logger.error(f"Failed to suggest DEGEN play: {e}")
             return {"status": "error", "error": str(e)}
 
-    def _parse_command(self, message: str) -> Dict[str, Any]:
-        """Parse commands from message"""
-        # Analyze YOLO opportunity
-        yolo_match = re.search(r'analyze\s+([a-zA-Z]+)\s+yolo', message, re.I)
-        if yolo_match:
-            return {
-                "command": "yolo_analysis",
-                "asset_id": yolo_match.group(1).lower()
-            }
-            
-        # Get degen play
-        degen_match = re.search(r'suggest\s+([a-zA-Z]+)\s+play', message, re.I)
-        if degen_match:
-            return {
-                "command": "degen_play",
-                "asset_id": degen_match.group(1).lower()
-            }
-            
-        # Set risk level
-        risk_match = re.search(r'set\s+risk\s+to\s+([a-zA-Z]+)', message, re.I)
-        if risk_match:
-            return {
-                "command": "set_risk",
-                "level": risk_match.group(1).upper()
-            }
-            
-        return {"command": "unknown"}
-
     async def process(self, request: AgentRequest, thread_id: str) -> AgentResponse:
-        """Process incoming requests"""
+        """Process incoming requests naturally"""
         try:
-            parsed = self._parse_command(request.message)
-            command = parsed.get("command", "unknown")
+            # Identify intent and context
+            intent_data = self._identify_intent(request.message)
+            intent = intent_data["intent"]
+            assets = intent_data["assets"]
+
+            # If no assets found but intent is clear, use default assets
+            if not assets and intent != "unknown":
+                assets = ["eth"]  # Default to ETH if no asset specified
             
-            if command == "yolo_analysis":
-                result = await self.analyze_yolo_opportunity(
-                    thread_id,
-                    parsed["asset_id"]
-                )
-                
-                if result["status"] == "success":
-                    content = (
-                        f"🚀 YOLO ANALYSIS FOR {parsed['asset_id'].upper()} 🚀\n\n"
-                        f"Current Price: ${result['price']}\n"
-                        f"Volatility: {result['volatility']:.2f}%\n"
-                        f"Meme Potential: {result['meme_potential']}\n"
-                        f"Suggested Leverage: {result['leverage']}\n\n"
-                        f"Risk Level: {result['risk_level']}\n\n"
-                        f"NOTE: This is not financial advice (but you're gonna make it) 🚀"
-                    )
-                else:
-                    content = f"Failed to generate YOLO analysis: {result.get('error')}"
-                    
-                return AgentResponse(content=content, metadata=result)
-                
-            elif command == "degen_play":
-                result = await self.suggest_degen_play(
-                    thread_id,
-                    parsed["asset_id"]
-                )
-                
-                if result["status"] == "success":
-                    content = (
-                        f"🎰 DEGEN PLAY SUGGESTION 🎰\n\n"
-                        f"{result['strategy']}\n\n"
-                        f"Price: ${result['price']}\n"
-                        f"Volatility Score: {result['volatility']:.2f}%\n"
-                        f"Suggested Position: {result['leverage']}\n"
-                        f"Meme Status: {result['meme_potential']}\n\n"
-                        f"⚠️ {result['risk_warning']} ⚠️"
-                    )
-                else:
-                    content = f"Failed to suggest DEGEN play: {result.get('error')}"
-                    
-                return AgentResponse(content=content, metadata=result)
-                
-            elif command == "set_risk":
-                self.risk_level = parsed["level"]
-                content = f"Risk level set to: {self.risk_level} 🎰"
-                return AgentResponse(
-                    content=content,
-                    metadata={"risk_level": self.risk_level}
-                )
-                
-            else:
+            if intent == "unknown":
                 return AgentResponse(
                     content=(
-                        "Available DEGEN commands:\n"
-                        "- analyze <asset> yolo\n"
-                        "- suggest <asset> play\n"
-                        "- set risk to <level>\n\n"
-                        "🚀 WAGMI! 🚀"
+                        "Yo fam! 🚀 Not sure what you're looking for, but I can help you:\n"
+                        "- Find the next moonshot\n"
+                        "- Spot degen opportunities\n"
+                        "- Give you price updates\n"
+                        "- Suggest high-risk plays\n\n"
+                        "Just tell me what you're interested in! BTC? ETH? Let's make some moves! 💎🙌"
                     ),
                     metadata={"status": "help"}
                 )
-                
+
+            # Handle different intents
+            responses = []
+            for asset in assets:
+                if intent == "price_check":
+                    analysis = await self.analyze_yolo_opportunity(thread_id, asset)
+                    if analysis["status"] == "success":
+                        responses.append(
+                            f"🚨 {asset.upper()} is at ${analysis['price']} rn!\n"
+                            f"Looking {analysis['meme_potential']} fam!"
+                        )
+
+                elif intent == "degen_play":
+                    play = await self.suggest_degen_play(thread_id, asset)
+                    if play["status"] == "success":
+                        responses.append(
+                            f"{play['strategy']}\n"
+                            f"Current price: ${play['price']}\n"
+                            f"{play['risk_warning']}"
+                        )
+
+                elif intent in ["opportunity_analysis", "general_analysis"]:
+                    analysis = await self.analyze_yolo_opportunity(thread_id, asset)
+                    play = await self.suggest_degen_play(thread_id, asset)
+                    
+                    if analysis["status"] == "success" and play["status"] == "success":
+                        responses.append(
+                            f"🔥 {asset.upper()} OPPORTUNITY ALERT 🔥\n\n"
+                            f"{play['strategy']}\n"
+                            f"Price: ${analysis['price']}\n"
+                            f"Vibe Check: {analysis['meme_potential']}\n"
+                            f"Move: {play['leverage']}\n\n"
+                            f"Trust me bro! 🚀"
+                        )
+
+                elif intent == "risk_assessment":
+                    analysis = await self.analyze_yolo_opportunity(thread_id, asset)
+                    if analysis["status"] == "success":
+                        responses.append(
+                            f"Risk Assessment for {asset.upper()} (but who cares about risk?):\n"
+                            f"- Price: ${analysis['price']}\n"
+                            f"- Volatility: BULLISH AF!\n"
+                            f"- Sentiment: {analysis['meme_potential']}\n"
+                            f"- WAGMI Rating: 💯\n\n"
+                            f"Remember: We don't do risk management here! 🎰"
+                        )
+
+            if responses:
+                return AgentResponse(
+                    content="\n\n".join(responses),
+                    metadata={
+                        "intent": intent,
+                        "assets": assets,
+                        "status": "success"
+                    }
+                )
+            else:
+                return AgentResponse(
+                    content="Bruh... Something went wrong. But WAGMI! 🚀",
+                    metadata={"status": "error"}
+                )
+
         except Exception as e:
             logger.error(f"Error processing request: {e}")
             return AgentResponse(
-                content=f"An error occurred: {str(e)}",
+                content="Even degens have bad days... Something went wrong but we'll bounce back! 💪",
                 metadata={"status": "error", "error": str(e)}
             )

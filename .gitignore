@@ -13,3 +13,4 @@ cdp_agent/src/*/__pycache__/*
 */.mypy_cache/*
 */.pytest_cache/*
 */.vscode/*
+*.DS_Store

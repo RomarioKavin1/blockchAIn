@@ -7,7 +7,7 @@ from src.storage.nildbapi import NilDBAPI
 # Initialize services
 nildb_api = NilDBAPI(NODE_CONFIG)
 
-def define_collection(schema: dict) -> bool:
+def define_collection(schema: dict) -> str:
     """Define a collection and register it on the nodes."""
     try:
         # Generate and id for the schema
@@ -29,10 +29,10 @@ def define_collection(schema: dict) -> bool:
                 break
 
         print(f"Schema ID: {schema_id}")
-        return success
+        return schema_id if success else None
     except Exception as e:
         print(f"Error creating schema: {str(e)}")
-        return False
+        return None
     
 if __name__ == "__main__":
     # register on nodes

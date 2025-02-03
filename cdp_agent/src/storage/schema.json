@@ -9,17 +9,34 @@
         "format": "uuid",
         "coerce": true
       },
-      "username": {
+      "agent_name": {
         "type": "string"
       },
-      "password": {
+      "thread_id": {
         "type": "string"
       },
-      "service": {
+      "wallet_id": {
         "type": "string"
+      },
+      "network_id": {
+        "type": "string"
+      },
+      "encrypted_seed": {
+        "type": "string"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "coerce": true
       }
     },
-    "required": ["_id", "username", "password", "service"],
+    "required": [
+      "_id",
+      "agent_name",
+      "thread_id",
+      "wallet_id",
+      "encrypted_seed"
+    ],
     "additionalProperties": false
   }
 }

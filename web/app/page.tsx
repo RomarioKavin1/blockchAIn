@@ -1,101 +1,194 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React from "react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import LogoComponent from "@/components/logo";
+import CyberButton from "@/components/cyberButton";
+
+const LandingPage = () => {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="relative min-h-screen bg-black overflow-hidden">
+      {/* Enhanced radial gradient background */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,#2563eb15_0%,transparent_50%)] animate-pulse" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,#7c3aed15_0%,transparent_50%)] animate-pulse delay-75" />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* Enhanced cyber grid with multiple layers */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.3 }}
+        transition={{ duration: 2 }}
+        className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f15_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f15_1px,transparent_1px)] bg-[size:64px_64px]"
+      />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.2 }}
+        transition={{ duration: 2 }}
+        className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f10_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f10_1px,transparent_1px)] bg-[size:32px_32px]"
+      />
+
+      {/* Animated particle system */}
+      <div className="absolute inset-0">
+        {[...Array(40)].map((_, i) => (
+          <motion.div
+            key={i}
+            className={`absolute w-${Math.random() > 0.5 ? "1" : "2"} h-${
+              Math.random() > 0.5 ? "1" : "2"
+            } 
+              ${
+                Math.random() > 0.5 ? "bg-purple-400/40" : "bg-cyan-400/40"
+              } rounded-full`}
+            initial={{
+              x: Math.random() * window.innerWidth,
+              y: Math.random() * window.innerHeight,
+            }}
+            animate={{
+              y: [null, -window.innerHeight],
+              opacity: [0.8, 0],
+            }}
+            transition={{
+              duration: Math.random() * 5 + 3,
+              repeat: Infinity,
+              delay: Math.random() * 5,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Enhanced floating lines */}
+      {[...Array(10)].map((_, i) => (
+        <motion.div
+          key={`line-${i}`}
+          className="absolute h-40 w-px bg-gradient-to-b from-transparent via-purple-500/50 to-transparent"
+          initial={{
+            x: Math.random() * window.innerWidth,
+            y: -100,
+            opacity: 0,
+          }}
+          animate={{
+            y: [window.innerHeight + 100],
+            opacity: [0, 1, 0],
+          }}
+          transition={{
+            duration: Math.random() * 3 + 4,
+            repeat: Infinity,
+            delay: Math.random() * 2,
+          }}
+        />
+      ))}
+
+      {/* Animated gradient orbs */}
+      <motion.div
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [0.3, 0.5, 0.3],
+          rotate: [0, 360],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Infinity,
+          ease: "linear",
+        }}
+        className="absolute top-1/4 -left-32 w-96 h-96 bg-gradient-to-r from-purple-500/30 to-cyan-500/30 rounded-full blur-3xl"
+      />
+      <motion.div
+        animate={{
+          scale: [1.2, 1, 1.2],
+          opacity: [0.3, 0.5, 0.3],
+          rotate: [360, 0],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Infinity,
+          ease: "linear",
+          delay: 4,
+        }}
+        className="absolute bottom-1/4 -right-32 w-96 h-96 bg-gradient-to-r from-cyan-500/30 to-purple-500/30 rounded-full blur-3xl"
+      />
+
+      {/* Scanlines effect */}
+      <div className="absolute inset-0 pointer-events-none bg-[repeating-linear-gradient(0deg,#00000015,#00000015_1px,transparent_1px,transparent_2px)]" />
+
+      {/* Main content */}
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-4 space-y-16">
+        {/* Logo section with cyber frame */}
+        <motion.div
+          initial={{ y: -50 }}
+          animate={{ y: 0 }}
+          className="relative p-8 rounded-lg"
+        >
+          {/* Enhanced cyber frame */}
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-cyan-400/10 to-purple-500/10 rounded-lg opacity-35" />
+          <div className="absolute inset-0 backdrop-blur-sm rounded-lg border border-purple-500/20" />
+
+          {/* Corner decorations with animations */}
+          {[
+            "-top-1 -left-1",
+            "-top-1 -right-1",
+            "-bottom-1 -left-1",
+            "-bottom-1 -right-1",
+          ].map((position, i) => (
+            <motion.div
+              key={i}
+              className={`absolute w-4 h-4 ${position}`}
+              animate={{
+                opacity: [1, 0.5, 1],
+                scale: [1, 1.1, 1],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                delay: i * 0.5,
+              }}
+            >
+              <div className="absolute inset-0 border-2 border-cyan-400/50" />
+              <div className="absolute inset-0 border-2 border-purple-500/50 transform translate-x-[1px] translate-y-[1px]" />
+            </motion.div>
+          ))}
+
+          <div className="relative">
+            <LogoComponent size="large" />
+          </div>
+        </motion.div>
+
+        {/* Motto with enhanced effects */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 0.8 }}
+          className="text-xl md:text-2xl font-pixel text-center max-w-3xl relative p-4"
+        >
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm rounded-lg -z-10" />
+          <span
+            className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r 
+            from-purple-400 via-cyan-400 to-purple-400
+            drop-shadow-[0_0_10px_rgba(168,85,247,0.3)]
+            after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px]
+            "
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            Unleash the Power of AI Swarms in the Blockchain
+          </span>
+        </motion.div>
+
+        {/* Enhanced launch button */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.2, duration: 0.8 }}
+        >
+          <CyberButton
+            cyberSize="xl"
+            glowColor="gradient"
+            className="font-pixel"
+            onClick={() => (window.location.href = "/dashboard")}
+            hoverEffect="both"
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            Launch dApp
+          </CyberButton>
+        </motion.div>
+      </div>
     </div>
   );
-}
+};
+
+export default LandingPage;

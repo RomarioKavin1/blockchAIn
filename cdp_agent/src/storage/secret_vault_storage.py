@@ -5,6 +5,7 @@ from typing import Dict, Any, Optional, List
 from src.storage.config import NODE_CONFIG
 from src.storage.nildbapi import NilDBAPI
 import nilql
+import os
 
 # Initialize NilDB API
 nildb_api = NilDBAPI(NODE_CONFIG)
@@ -18,19 +19,83 @@ class WalletStorage:
     
     def _get_or_create_schema(self) -> str:
         """Create schema if it does not exist."""
-        schema = json.load(open('schema.json', 'r'))
-        schema_id = str(uuid.uuid4())
+        SCHEMA_FILE_PATH = "data/nillion_schema_id.txt"
         
-        for node_name in NODE_CONFIG.keys():
-            payload = {
-                "_id": schema_id,
-                "name": "wallet_storage",
-                "keys": ["_id"],
-                "schema": schema
+        try:
+            # Check if schema ID exists in local file
+            os.makedirs("data", exist_ok=True)
+            if os.path.exists(SCHEMA_FILE_PATH):
+                with open(SCHEMA_FILE_PATH, 'r') as f:
+                    schema_id = f.read().strip()
+                    if schema_id:
+                        print(f"Using existing schema ID: {schema_id}")
+                        return schema_id
+
+            # Create new schema
+            DEFAULT_SCHEMA = {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "_id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "coerce": True
+                        },
+                        "agent_name": {
+                            "type": "string"
+                        },
+                        "thread_id": {
+                            "type": "string"
+                        },
+                        "wallet_id": {
+                            "type": "string"
+                        },
+                        "network_id": {
+                            "type": "string"
+                        },
+                        "encrypted_seed": {
+                            "type": "string"
+                        },
+                        "created_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "coerce": True
+                        }
+                    },
+                    "required": [
+                        "_id",
+                        "agent_name",
+                        "thread_id",
+                        "wallet_id",
+                        "encrypted_seed"
+                    ],
+                    "additionalProperties": False
+                }
             }
-            nildb_api.create_schema(node_name, payload)
-        
-        return schema_id
+
+            schema_id = str(uuid.uuid4())
+            
+            for node_name in NODE_CONFIG.keys():
+                payload = {
+                    "_id": schema_id,
+                    "name": "wallet_storage",
+                    "keys": ["_id"],
+                    "schema": DEFAULT_SCHEMA
+                }
+                nildb_api.create_schema(node_name, payload)
+            
+            # Save schema ID to local file
+            with open(SCHEMA_FILE_PATH, 'w') as f:
+                f.write(schema_id)
+            
+            print(f"Created new schema with ID: {schema_id}")
+            return schema_id
+
+        except Exception as e:
+            print(f"Error in _get_or_create_schema: {e}")
+            raise
 
     def encrypt_seed(self, seed_data: str) -> List[str]:
         """Encrypt seed using secret sharing."""

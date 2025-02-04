@@ -23,7 +23,7 @@ const LogoComponent: React.FC<LogoComponentProps> = ({ size = "large" }) => {
       transition={{ type: "spring", stiffness: 400, damping: 10 }}
     >
       {/* Background effect */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm rounded-lg" />
+      <div className="absolute inset-0 bg-black/10 backdrop-blur-sm rounded-lg" />
 
       {/* Main logo container */}
       <div className="relative flex flex-col items-center">

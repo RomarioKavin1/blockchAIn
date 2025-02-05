@@ -1,12 +1,34 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import LogoComponent from "@/components/logo";
 import CyberButton from "@/components/cyberButton";
 
 const LandingPage = () => {
+  const [windowSize, setWindowSize] = useState({ width: 1200, height: 800 });
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setWindowSize({
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
+    setIsMounted(true);
+
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  if (!isMounted) return null; // Prevent rendering until we have window size
+
   return (
     <div className="relative min-h-screen bg-black overflow-hidden">
       {/* Enhanced radial gradient background */}
@@ -32,18 +54,15 @@ const LandingPage = () => {
         {[...Array(40)].map((_, i) => (
           <motion.div
             key={i}
-            className={`absolute w-${Math.random() > 0.5 ? "1" : "2"} h-${
-              Math.random() > 0.5 ? "1" : "2"
-            } 
-              ${
-                Math.random() > 0.5 ? "bg-purple-400/40" : "bg-cyan-400/40"
-              } rounded-full`}
+            className={`absolute w-1 h-1 ${
+              i % 2 === 0 ? "bg-purple-400/40" : "bg-cyan-400/40"
+            } rounded-full`}
             initial={{
-              x: Math.random() * window.innerWidth,
-              y: Math.random() * window.innerHeight,
+              x: Math.random() * windowSize.width,
+              y: Math.random() * windowSize.height,
             }}
             animate={{
-              y: [null, -window.innerHeight],
+              y: [null, -windowSize.height],
               opacity: [0.8, 0],
             }}
             transition={{
@@ -61,12 +80,12 @@ const LandingPage = () => {
           key={`line-${i}`}
           className="absolute h-40 w-px bg-gradient-to-b from-transparent via-purple-500/50 to-transparent"
           initial={{
-            x: Math.random() * window.innerWidth,
+            x: Math.random() * windowSize.width,
             y: -100,
             opacity: 0,
           }}
           animate={{
-            y: [window.innerHeight + 100],
+            y: [windowSize.height + 100],
             opacity: [0, 1, 0],
           }}
           transition={{

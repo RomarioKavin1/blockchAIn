@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import "@coinbase/onchainkit/styles.css";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Press_Start_2P } from "next/font/google";
+import { Providers } from "@/lib/provider";
 
 const pixelFont = Press_Start_2P({
   weight: "400",
@@ -21,7 +23,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${pixelFont.variable}`}>
-      <body className={`${pixelFont.className} antialiased`}>{children}</body>
+      <body className={`${pixelFont.className} antialiased`}>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

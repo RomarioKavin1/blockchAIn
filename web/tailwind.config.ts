@@ -12,6 +12,22 @@ export default {
       fontFamily: {
         pixel: ["var(--font-pixel)"],
       },
+      keyframes: {
+        "float-up": {
+          "0%": { transform: "translateY(100vh)", opacity: "0" },
+          "10%": { opacity: "0.5" },
+          "90%": { opacity: "0.5" },
+          "100%": { transform: "translateY(-100px)", opacity: "0" },
+        },
+        "pulse-delayed": {
+          "0%, 100%": { opacity: "0.3" },
+          "50%": { opacity: "0.6" },
+        },
+      },
+      animation: {
+        "float-up": "float-up 10s linear infinite",
+        "pulse-delayed": "pulse-delayed 4s linear infinite",
+      },
       colors: {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",

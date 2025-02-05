@@ -50,9 +50,9 @@ const SwarmCard: React.FC<SwarmCardProps> = ({ name, agents, lastActive }) => {
           <h3 className="text-xl font-pixel">{name}</h3>
 
           <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-400">
+            {/* <div className="text-sm text-gray-400">
               {agents.length} Agents • Last active: {lastActive || "Never"}
-            </div>
+            </div> */}
             <CyberButton
               cyberSize="default"
               onClick={() => (window.location.href = `/swarm/${name}`)}

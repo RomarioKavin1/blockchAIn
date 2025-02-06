@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 
 const OptimizedBackground = () => {
   const [mounted, setMounted] = useState(false);

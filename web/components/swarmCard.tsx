@@ -10,7 +10,7 @@ interface SwarmCardProps {
   lastActive?: string;
 }
 
-const SwarmCard: React.FC<SwarmCardProps> = ({ name, agents, lastActive }) => {
+const SwarmCard: React.FC<SwarmCardProps> = ({ name, agents }) => {
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}

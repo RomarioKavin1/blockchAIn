@@ -4,10 +4,14 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { AtSign, Send, Users } from "lucide-react";
+import { useAccount, useReadContracts } from "wagmi";
 import { agents } from "@/config/agents";
 import LogoComponent from "@/components/logo";
 import CyberButton from "@/components/cyberButton";
-import { useRouter } from "next/router";
+import { swarm_abi, swarm_contract } from "@/lib/deployments";
+import { Abi } from "viem";
+import { DynamicWidget } from "@dynamic-labs/sdk-react-core";
+
 interface Message {
   id: string;
   content: string;
@@ -15,46 +19,139 @@ interface Message {
   timestamp: Date;
   targetAgents?: string[];
   isDirectMessage?: boolean;
+  metadata?: any;
 }
 
-interface SwarmChatPageProps {
-  params: {
-    id: string;
-  };
+interface SwarmDetails {
+  threadId: string;
+  agentCount: bigint;
+  createdAt: bigint;
+  status: number;
+  owner: string;
+  agents: string[];
 }
-
-interface MessageBubbleProps {
-  message: Message;
-}
-
-interface AgentSelectorProps {
-  isOpen: boolean;
-  selectedAgents: string[];
-  onToggle: (agentId: string) => void;
-}
-
-const DEFAULT_SWARM_MEMBERS = [
-  "personal-accountant",
-  "financial-advisor",
-  "degen",
-  "risk-manager",
-];
 
 export default function Page({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const { address, isConnected } = useAccount();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [isAgentSelectOpen, setAgentSelectOpen] = useState(false);
   const [slug, setSlug] = useState("");
+  const [swarmDetails, setSwarmDetails] = useState<SwarmDetails | null>(null);
+  const [swarmEvents, setSwarmEvents] = useState<any[]>([]);
+
   useEffect(() => {
     params.then((data) => {
       setSlug(data.slug);
     });
-  }, []);
+  }, [params]);
+
+  // Fetch swarm details
+  const { data: swarmResult, isLoading } = useReadContracts({
+    contracts: [
+      {
+        address: swarm_contract,
+        abi: swarm_abi as Abi,
+        functionName: "getSwarmDetails",
+        args: [BigInt(slug || "0")],
+      },
+      {
+        address: swarm_contract,
+        abi: swarm_abi as Abi,
+        functionName: "getSwarmAgents",
+        args: [BigInt(slug || "0")],
+      },
+    ],
+    query: {
+      enabled: !!slug,
+    },
+  });
+
+  useEffect(() => {
+    if (swarmResult && swarmResult.length === 2) {
+      const details = swarmResult[0].result as [
+        string,
+        bigint,
+        bigint,
+        number,
+        string
+      ];
+      const agentIds = swarmResult[1].result as readonly bigint[];
+
+      if (details && agentIds) {
+        const [threadId, agentCount, createdAt, status, owner] = details;
+        setSwarmDetails({
+          threadId,
+          agentCount,
+          createdAt,
+          status,
+          owner,
+          agents: agentIds
+            .map((id) => agents.find((a) => a.num === Number(id))?.id)
+            .filter(Boolean) as string[],
+        });
+      }
+    }
+  }, [swarmResult]);
+
+  const sendMessage = async (content: string, targetAgents: string[]) => {
+    if (!swarmDetails?.threadId) return;
+
+    const promises = targetAgents.map(async (agentId) => {
+      const agent = agents.find((a) => a.id === agentId);
+      if (!agent?.apiendpoint) return null;
+
+      try {
+        const response = await fetch(
+          `${agent.apiendpoint}/${swarmDetails.threadId}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              from: "user1",
+              message: content,
+            }),
+          }
+        );
+
+        const data = await response.json();
+        return {
+          id: Date.now().toString() + agent.id,
+          content: data.content,
+          senderId: agent.id,
+          timestamp: new Date(),
+          targetAgents: [data.to === 0 ? "user" : data.to.toString()],
+          isDirectMessage: true,
+          metadata: data.metadata,
+        };
+      } catch (error) {
+        console.error(`Error sending message to ${agent.name}:`, error);
+        return null;
+      }
+    });
+
+    const responses = (await Promise.all(promises)).filter(
+      Boolean
+    ) as Message[];
+
+    setMessages((prev) => [...prev, ...responses]);
+    setSwarmEvents((prev) => [
+      ...prev,
+      ...responses
+        .filter((r) => r.metadata)
+        .map((r) => ({
+          agentId: r.senderId,
+          timestamp: r.timestamp,
+          metadata: r.metadata,
+        })),
+    ]);
+  };
+
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
 
@@ -63,43 +160,36 @@ export default function Page({
       content: inputValue,
       senderId: "user",
       timestamp: new Date(),
-      targetAgents: selectedAgents.length > 0 ? selectedAgents : undefined,
+      targetAgents:
+        selectedAgents.length > 0 ? selectedAgents : swarmDetails?.agents,
       isDirectMessage: selectedAgents.length > 0,
     };
 
     setMessages((prev) => [...prev, newMessage]);
+    sendMessage(
+      inputValue,
+      selectedAgents.length > 0 ? selectedAgents : swarmDetails?.agents || []
+    );
     setInputValue("");
     setSelectedAgents([]);
     setAgentSelectOpen(false);
-
-    // Simulate agent responses
-    if (selectedAgents.length > 0) {
-      selectedAgents.forEach((agentId) => {
-        setTimeout(() => {
-          const agent = agents.find((a) => a.id === agentId);
-          if (agent) {
-            const response: Message = {
-              id: Date.now().toString(),
-              content: `Response from ${agent.name} regarding your question...`,
-              senderId: agentId,
-              timestamp: new Date(),
-              targetAgents: ["user"],
-              isDirectMessage: true,
-            };
-            setMessages((prev) => [...prev, response]);
-          }
-        }, Math.random() * 2000 + 1000);
-      });
-    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col overflow-hidden">
-      <SwarmHeader swarmId={slug} />
+      <SwarmHeader swarmId={slug} isConnected={isConnected} />
 
       <div className="flex-1 flex">
         <div className="flex flex-1 overflow-hidden">
-          <AgentsSidebar swarmMembers={DEFAULT_SWARM_MEMBERS} />
+          <AgentsSidebar swarmMembers={swarmDetails?.agents || []} />
 
           <main className="flex-1 flex flex-col h-screen pt-20 pb-16">
             <div className="flex-1 overflow-y-auto px-4">
@@ -113,18 +203,21 @@ export default function Page({
               isAgentSelectOpen={isAgentSelectOpen}
               setAgentSelectOpen={setAgentSelectOpen}
               onSendMessage={handleSendMessage}
-              swarmMembers={DEFAULT_SWARM_MEMBERS}
+              swarmMembers={swarmDetails?.agents || []}
             />
           </main>
 
-          <SwarmInfoSidebar swarmId={slug} />
+          <SwarmEventsSidebar events={swarmEvents} />
         </div>
       </div>
     </div>
   );
 }
 
-const SwarmHeader: React.FC<{ swarmId: string }> = ({ swarmId }) => (
+const SwarmHeader: React.FC<{ swarmId: string; isConnected: boolean }> = ({
+  swarmId,
+  isConnected,
+}) => (
   <header className="fixed top-0 w-full z-50 border-b border-purple-500/20 bg-black/30 backdrop-blur-sm">
     <div className="container mx-auto px-4 h-16 flex justify-between items-center">
       <div className="flex items-center gap-4">
@@ -132,10 +225,9 @@ const SwarmHeader: React.FC<{ swarmId: string }> = ({ swarmId }) => (
           <LogoComponent />
         </div>
         <div className="h-8 w-px bg-purple-500/20" />
+        <span className="text-sm text-purple-300">Swarm #{swarmId}</span>
       </div>
-      <CyberButton cyberSize="default" variant="outline">
-        Connect Wallet
-      </CyberButton>
+      <DynamicWidget />
     </div>
   </header>
 );
@@ -175,13 +267,41 @@ const AgentsSidebar: React.FC<{ swarmMembers: string[] }> = ({
   </aside>
 );
 
-const SwarmInfoSidebar: React.FC<{ swarmId: string }> = ({ swarmId }) => (
+const SwarmEventsSidebar: React.FC<{ events: any[] }> = ({ events }) => (
   <aside className="w-80 border-l border-purple-500/20 bg-black/30 backdrop-blur-sm hidden xl:block pt-20">
     <div className="p-4">
-      <h2 className="text-sm font-semibold text-gray-400 mb-4">
-        Swarm Details
-      </h2>
-      {/* Add swarm details here */}
+      <h2 className="text-sm font-semibold text-gray-400 mb-4">Swarm Events</h2>
+      <div className="space-y-4">
+        {events.map((event, index) => {
+          const agent = agents.find((a) => a.id === event.agentId);
+          return (
+            <div
+              key={index}
+              className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="relative w-6 h-6">
+                  <Image
+                    src={agent?.avatarUrl || ""}
+                    alt={agent?.name || ""}
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+                <span className="text-sm font-medium">{agent?.name}</span>
+              </div>
+              <div className="text-xs text-gray-400">
+                <pre className="whitespace-pre-wrap">
+                  {JSON.stringify(event.metadata, null, 2)}
+                </pre>
+              </div>
+              <div className="text-xs text-gray-500 mt-2">
+                {new Date(event.timestamp).toLocaleTimeString()}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   </aside>
 );
@@ -203,7 +323,7 @@ const ChatMessages: React.FC<{ messages: Message[] }> = ({ messages }) => {
   );
 };
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
+const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
   const sender =
     message.senderId === "user"
       ? { name: "You", avatarUrl: "/avatars/user.png" }
@@ -266,13 +386,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               })}
             </div>
           )}
+          {message.metadata && (
+            <div className="mt-2 text-xs bg-gray-900/50 rounded p-2 text-gray-400">
+              <pre className="whitespace-pre-wrap">
+                {JSON.stringify(message.metadata, null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
   );
 };
 
-interface ChatInputProps {
+const ChatInput: React.FC<{
   inputValue: string;
   setInputValue: (value: string) => void;
   selectedAgents: string[];
@@ -281,9 +408,7 @@ interface ChatInputProps {
   setAgentSelectOpen: (open: boolean) => void;
   onSendMessage: () => void;
   swarmMembers: string[];
-}
-
-const ChatInput: React.FC<ChatInputProps> = ({
+}> = ({
   inputValue,
   setInputValue,
   selectedAgents,
@@ -350,19 +475,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
   );
 };
 
-interface AgentSelectorProps {
+const AgentSelector: React.FC<{
   isOpen: boolean;
   selectedAgents: string[];
   onToggle: (agentId: string) => void;
   swarmMembers: string[];
-}
-
-const AgentSelector: React.FC<AgentSelectorProps> = ({
-  isOpen,
-  selectedAgents,
-  onToggle,
-  swarmMembers,
-}) => (
+}> = ({ isOpen, selectedAgents, onToggle, swarmMembers }) => (
   <AnimatePresence>
     {isOpen && (
       <motion.div

@@ -10,13 +10,13 @@ from datetime import datetime, timedelta
 logger = logging.getLogger(__name__)
 
 class DataScientistMixin(CDPAgentMixin):
-    """Mixin for Data Scientist capabilities"""
-    def __init__(self):
-        super().__init__([
-            BalanceCapability,
-            PythPriceCapability,
-            PythPriceFeedIDCapability
-        ])
+        """Mixin for Data Scientist capabilities"""
+        def __init__(self):
+            super().__init__([
+                BalanceCapability,
+                PythPriceCapability,
+                PythPriceFeedIDCapability
+            ])
 
 class DataScientist(BaseAgent, DataScientistMixin):
     """Data Scientist agent specializing in on-chain data analysis"""

@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional
 from .cdp_base import CDPCapability
 import logging
-
+from cdp_agentkit_core.actions import CdpAction
 logger = logging.getLogger(__name__)
 
 class BalanceCapability(CDPCapability):

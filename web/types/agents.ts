@@ -12,6 +12,7 @@ export interface AgentGroup {
 }
 
 export interface Agent {
+  num: number;
   id: string;
   name: string;
   type: string;
@@ -29,4 +30,5 @@ export interface Swarm {
   agents: string[]; // Array of agent IDs
   lastActive?: string;
   created: string;
+  threadId?: string;
 }

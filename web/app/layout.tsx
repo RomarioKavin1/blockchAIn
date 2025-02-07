@@ -21,7 +21,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${pixelFont.variable}`}>
+    <html
+      lang="en"
+      className={`${pixelFont.variable}`}
+      suppressHydrationWarning
+    >
       <body className={`${pixelFont.className} antialiased`}>
         <Providers>{children}</Providers>
       </body>

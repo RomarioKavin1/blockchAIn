@@ -73,6 +73,7 @@ const allCapabilities = [
 export const agents: Agent[] = [
   // deFAI Group
   {
+    num: 1,
     id: "personal-accountant",
     name: "Personal Accountant",
     type: "Finance",
@@ -101,6 +102,7 @@ export const agents: Agent[] = [
     avatarUrl: "/avatars/personal-accountant.png",
   },
   {
+    num: 2,
     id: "financial-advisor",
     name: "Financial Advisor",
     type: "Finance",
@@ -137,6 +139,7 @@ export const agents: Agent[] = [
     avatarUrl: "/avatars/financial-advisor.png",
   },
   {
+    num: 3,
     id: "degen",
     name: "Degen",
     type: "Trading",
@@ -167,6 +170,7 @@ export const agents: Agent[] = [
     avatarUrl: "/avatars/degen.png",
   },
   {
+    num: 4,
     id: "risk-manager",
     name: "Risk Manager",
     type: "Finance",
@@ -188,6 +192,7 @@ export const agents: Agent[] = [
     avatarUrl: "/avatars/risk-manager.png",
   },
   {
+    num: 5,
     id: "god-agent",
     name: "Universal Controller",
     type: "Supreme",
@@ -201,6 +206,7 @@ export const agents: Agent[] = [
 
   // Research Group
   {
+    num: 6,
     id: "data-scientist",
     name: "Data Scientist",
     type: "Research",
@@ -221,6 +227,7 @@ export const agents: Agent[] = [
     avatarUrl: "/avatars/data-scientist.png",
   },
   {
+    num: 7,
     id: "news-aggregator",
     name: "News Aggregator",
     type: "Research",
@@ -237,6 +244,7 @@ export const agents: Agent[] = [
     avatarUrl: "/avatars/news-aggregator.png",
   },
   {
+    num: 8,
     id: "pattern-detector",
     name: "Pattern Detector",
     type: "Research",
@@ -257,6 +265,7 @@ export const agents: Agent[] = [
     avatarUrl: "/avatars/pattern-detector.png",
   },
   {
+    num: 9,
     id: "sentiment-analyzer",
     name: "Sentiment Analyzer",
     type: "Research",
@@ -278,6 +287,7 @@ export const agents: Agent[] = [
   },
   // Governance Group
   {
+    num: 10,
     id: "proposal-analyzer",
     name: "Proposal Analyzer",
     type: "Governance",
@@ -293,6 +303,7 @@ export const agents: Agent[] = [
     avatarUrl: "/avatars/proposal-analyzer.png",
   },
   {
+    num: 11,
     id: "vote-calculator",
     name: "Vote Calculator",
     type: "Governance",
@@ -305,6 +316,7 @@ export const agents: Agent[] = [
     apiendpoint: `${process.env.BACKEND_URL}/gov-vote-calculator`,
   },
   {
+    num: 12,
     id: "strategy-coordinator",
     name: "Strategy Coordinator",
     type: "Governance",

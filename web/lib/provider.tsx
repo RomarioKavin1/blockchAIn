@@ -1,16 +1,37 @@
 "use client";
+import { DynamicContextProvider } from "@dynamic-labs/sdk-react-core";
+import { DynamicWagmiConnector } from "@dynamic-labs/wagmi-connector";
+import { createConfig, WagmiProvider } from "wagmi";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { http } from "viem";
+import { baseSepolia } from "viem/chains";
+import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
+import { ReactNode } from "react";
 
-import type { ReactNode } from "react";
-import { OnchainKitProvider } from "@coinbase/onchainkit";
-import { base } from "wagmi/chains"; // add baseSepolia for testing
+const config = createConfig({
+  chains: [baseSepolia],
+  multiInjectedProviderDiscovery: false,
+  transports: {
+    [baseSepolia.id]: http(),
+  },
+});
+
+const queryClient = new QueryClient();
 
 export function Providers(props: { children: ReactNode }) {
   return (
-    <OnchainKitProvider
-      apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
-      chain={base} // add baseSepolia for testing
+    <DynamicContextProvider
+      settings={{
+        environmentId: "8c6cc3a3-6751-4038-b749-5c4775a58510",
+        walletConnectors: [EthereumWalletConnectors],
+        initialAuthenticationMode: "connect-and-sign",
+      }}
     >
-      {props.children}
-    </OnchainKitProvider>
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <DynamicWagmiConnector>{props.children}</DynamicWagmiConnector>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </DynamicContextProvider>
   );
 }

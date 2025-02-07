@@ -9,6 +9,7 @@ import CyberButton from "@/components/cyberButton";
 import OptimizedBackground from "@/components/background";
 import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import SwarmPreview from "@/components/swarmPreview";
+import { DynamicWidget } from "@dynamic-labs/sdk-react-core";
 
 export default function CreateSwarmPage() {
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
@@ -44,9 +45,7 @@ export default function CreateSwarmPage() {
           <div className="scale-50 origin-left">
             <LogoComponent />
           </div>
-          <CyberButton cyberSize="default" variant="outline" className="mr-2">
-            Connect Wallet
-          </CyberButton>
+          <DynamicWidget />
         </div>
       </header>
 

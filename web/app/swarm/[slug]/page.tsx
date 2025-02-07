@@ -132,9 +132,6 @@ const SwarmHeader: React.FC<{ swarmId: string }> = ({ swarmId }) => (
           <LogoComponent />
         </div>
         <div className="h-8 w-px bg-purple-500/20" />
-        <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-          Finance Squad
-        </h1>
       </div>
       <CyberButton cyberSize="default" variant="outline">
         Connect Wallet

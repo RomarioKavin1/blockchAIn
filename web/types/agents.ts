@@ -19,6 +19,7 @@ export interface Agent {
   description: string;
   capabilities: Capability[];
   avatarUrl: string;
+  apiendpoint: string;
 }
 
 export interface Swarm {

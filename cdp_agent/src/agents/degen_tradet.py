@@ -161,6 +161,7 @@ class DegenTrader(BaseAgent, DegenMixin):
                     f"Markets are moving fam! ETH's at ${eth_price['price']}. "
                     f"What kind of opportunities you looking for? "
                     f"I can check prices, suggest trades, or find some yield plays."
+                    f"Idk bout that fam,Im just waiting for eth to go to the moon"
                 )
 
             return AgentResponse(

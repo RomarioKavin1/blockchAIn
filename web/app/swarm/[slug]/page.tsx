@@ -21,6 +21,9 @@ interface Message {
   isDirectMessage?: boolean;
   metadata?: any;
 }
+interface TypingState {
+  [key: string]: boolean;
+}
 
 interface SwarmDetails {
   threadId: string;
@@ -44,6 +47,7 @@ export default function Page({
   const [slug, setSlug] = useState("");
   const [swarmDetails, setSwarmDetails] = useState<SwarmDetails | null>(null);
   const [swarmEvents, setSwarmEvents] = useState<any[]>([]);
+  const [typingAgents, setTypingAgents] = useState<TypingState>({});
 
   useEffect(() => {
     params.then((data) => {
@@ -98,9 +102,15 @@ export default function Page({
       }
     }
   }, [swarmResult]);
-
   const sendMessage = async (content: string, targetAgents: string[]) => {
     if (!swarmDetails?.threadId) return;
+
+    // Set typing state for all target agents
+    const newTypingState: TypingState = {};
+    targetAgents.forEach((agentId) => {
+      newTypingState[agentId] = true;
+    });
+    setTypingAgents(newTypingState);
 
     const promises = targetAgents.map(async (agentId) => {
       const agent = agents.find((a) => a.id === agentId);
@@ -120,16 +130,22 @@ export default function Page({
         );
 
         const data = await response.json();
+
+        // Remove typing indicator for this agent
+        setTypingAgents((prev) => ({ ...prev, [agentId]: false }));
+
         return {
           id: Date.now().toString() + agent.id,
           content: data.content,
           senderId: agent.id,
           timestamp: new Date(),
-          targetAgents: [data.to === 0 ? "user" : data.to.toString()],
+          targetAgents: "user" === agentId ? [agentId] : [agentId],
           isDirectMessage: true,
           metadata: data.metadata,
         };
       } catch (error) {
+        // Remove typing indicator on error
+        setTypingAgents((prev) => ({ ...prev, [agentId]: false }));
         console.error(`Error sending message to ${agent.name}:`, error);
         return null;
       }
@@ -193,7 +209,7 @@ export default function Page({
 
           <main className="flex-1 flex flex-col h-screen pt-20 pb-16">
             <div className="flex-1 overflow-y-auto px-4">
-              <ChatMessages messages={messages} />
+              <ChatMessages messages={messages} typingAgents={typingAgents} />
             </div>
             <ChatInput
               inputValue={inputValue}
@@ -306,18 +322,27 @@ const SwarmEventsSidebar: React.FC<{ events: any[] }> = ({ events }) => (
   </aside>
 );
 
-const ChatMessages: React.FC<{ messages: Message[] }> = ({ messages }) => {
+const ChatMessages: React.FC<{
+  messages: Message[];
+  typingAgents: TypingState;
+}> = ({ messages, typingAgents }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, typingAgents]);
 
   return (
     <div className="space-y-2 py-4">
       {messages.map((message) => (
         <MessageBubble key={message.id} message={message} />
       ))}
+      {Object.entries(typingAgents).map(([agentId, isTyping]) => {
+        if (!isTyping) return null;
+        const agent = agents.find((a) => a.id === agentId);
+        if (!agent) return null;
+        return <TypingIndicator key={`typing-${agentId}`} agent={agent} />;
+      })}
       <div ref={messagesEndRef} />
     </div>
   );
@@ -523,4 +548,46 @@ const AgentSelector: React.FC<{
       </motion.div>
     )}
   </AnimatePresence>
+);
+const TypingIndicator: React.FC<{ agent: any }> = ({ agent }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="flex justify-start"
+  >
+    <div className="flex items-start gap-2 max-w-2xl">
+      <div className="relative w-24 h-24 rounded-full overflow-hidden flex-shrink-0">
+        <Image
+          src={agent.avatarUrl}
+          alt={agent.name}
+          width={500}
+          height={500}
+        />
+      </div>
+      <div className="mt-8">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-sm font-medium text-gray-400">
+            {agent.name}
+          </span>
+        </div>
+        <div className="bg-cyan-500/20 rounded-lg p-3 flex items-center gap-1">
+          <motion.div
+            className="w-2 h-2 bg-cyan-300 rounded-full"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+          />
+          <motion.div
+            className="w-2 h-2 bg-cyan-300 rounded-full"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+          />
+          <motion.div
+            className="w-2 h-2 bg-cyan-300 rounded-full"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+          />
+        </div>
+      </div>
+    </div>
+  </motion.div>
 );

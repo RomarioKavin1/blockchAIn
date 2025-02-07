@@ -28,12 +28,8 @@ export default function CreateSwarm() {
     const formData = new FormData(e.target as HTMLFormElement);
     const threadId = formData.get("threadId") as string;
     const initialAgentIds = JSON.parse(formData.get("agentIds") as string); // Parsing agent IDs as an array of numbers
-
-    // Call the createSwarm function
     await createSwarm(threadId, initialAgentIds);
   };
-
-  // Wait for transaction confirmation
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
     useWaitForTransactionReceipt({
       hash,

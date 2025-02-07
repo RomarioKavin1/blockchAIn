@@ -78,7 +78,7 @@ export const agents: Agent[] = [
     name: "Personal Accountant",
     type: "Finance",
     group: "defai",
-    apiendpoint: `${process.env.BACKEND_URL}/defi-accountant`,
+    apiendpoint: `${process.env.NEXT_PUBLIC_BACKEND_URL}/defi-accountant`,
     description:
       "Your trusted financial manager with complete fund access and management capabilities",
     capabilities: [
@@ -107,7 +107,7 @@ export const agents: Agent[] = [
     name: "Financial Advisor",
     type: "Finance",
     group: "defai",
-    apiendpoint: `${process.env.BACKEND_URL}/defi-advisor`,
+    apiendpoint: `${process.env.NEXT_PUBLIC_BACKEND_URL}/defi-advisor`,
     description:
       "Strategic advisor providing deep financial insights and investment recommendations",
     capabilities: [
@@ -144,7 +144,7 @@ export const agents: Agent[] = [
     name: "Degen",
     type: "Trading",
     group: "defai",
-    apiendpoint: `${process.env.BACKEND_URL}/defi-degen`,
+    apiendpoint: `${process.env.NEXT_PUBLIC_BACKEND_URL}/defi-degen`,
     description:
       "High-risk, high-reward strategist with deep social media insights",
     capabilities: [
@@ -176,7 +176,7 @@ export const agents: Agent[] = [
     type: "Finance",
     group: "defai",
     description: "Ensures portfolio safety and monitors risk exposure",
-    apiendpoint: `${process.env.BACKEND_URL}/defi-risk-manager`,
+    apiendpoint: `${process.env.NEXT_PUBLIC_BACKEND_URL}/defi-risk-manager`,
     capabilities: [
       { name: "BalanceCapability", description: "Position risk monitoring" },
       { name: "PythPriceCapability", description: "Price risk assessment" },
@@ -201,7 +201,7 @@ export const agents: Agent[] = [
       "The ultimate agent with unlimited access and capabilities across all domains. Combines financial expertise, research prowess, and governance mastery.",
     capabilities: allCapabilities,
     avatarUrl: "/avatars/god.png",
-    apiendpoint: `${process.env.BACKEND_URL}/god-god-agent`,
+    apiendpoint: `${process.env.NEXT_PUBLIC_BACKEND_URL}/god-god-agent`,
   },
 
   // Research Group
@@ -212,7 +212,7 @@ export const agents: Agent[] = [
     type: "Research",
     group: "research",
     description: "Advanced on-chain data analysis and pattern recognition",
-    apiendpoint: `${process.env.BACKEND_URL}/research-data-scientist`,
+    apiendpoint: `${process.env.NEXT_PUBLIC_BACKEND_URL}/research-data-scientist`,
     capabilities: [
       {
         name: "BalanceCapability",
@@ -233,7 +233,7 @@ export const agents: Agent[] = [
     type: "Research",
     group: "research",
     description: "Real-time news monitoring and impact analysis",
-    apiendpoint: `${process.env.BACKEND_URL}/research-news-aggregator`,
+    apiendpoint: `${process.env.NEXT_PUBLIC_BACKEND_URL}/research-news-aggregator`,
     capabilities: [
       { name: "PythPriceCapability", description: "News impact on prices" },
       {
@@ -250,7 +250,7 @@ export const agents: Agent[] = [
     type: "Research",
     group: "research",
     description: "Identifies market patterns and trading opportunities",
-    apiendpoint: `${process.env.BACKEND_URL}/research-pattern-detector`,
+    apiendpoint: `${process.env.NEXT_PUBLIC_BACKEND_URL}/research-pattern-detector`,
     capabilities: [
       {
         name: "PythPriceCapability",
@@ -271,7 +271,7 @@ export const agents: Agent[] = [
     type: "Research",
     group: "research",
     description: "Social media and market sentiment analysis",
-    apiendpoint: `${process.env.BACKEND_URL}/research-sentiment-analyzer`,
+    apiendpoint: `${process.env.NEXT_PUBLIC_BACKEND_URL}/research-sentiment-analyzer`,
     capabilities: [
       { name: "WowBuyTokenCapability", description: "Trend momentum analysis" },
       {
@@ -293,7 +293,7 @@ export const agents: Agent[] = [
     type: "Governance",
     group: "governance",
     description: "DAO proposal analysis and stakeholder assessment",
-    apiendpoint: `${process.env.BACKEND_URL}/gov-proposal-analyzer`,
+    apiendpoint: `${process.env.NEXT_PUBLIC_BACKEND_URL}/gov-proposal-analyzer`,
     capabilities: [
       {
         name: "WalletDetailsCapability",
@@ -313,7 +313,7 @@ export const agents: Agent[] = [
       { name: "BalanceCapability", description: "Voting power calculations" },
     ],
     avatarUrl: "/avatars/vote-calculator.png",
-    apiendpoint: `${process.env.BACKEND_URL}/gov-vote-calculator`,
+    apiendpoint: `${process.env.NEXT_PUBLIC_BACKEND_URL}/gov-vote-calculator`,
   },
   {
     num: 12,
@@ -322,7 +322,7 @@ export const agents: Agent[] = [
     type: "Governance",
     group: "governance",
     description: "Coordinates governance strategy and execution",
-    apiendpoint: `${process.env.BACKEND_URL}/gov-strategy-coordinator`,
+    apiendpoint: `${process.env.NEXT_PUBLIC_BACKEND_URL}/gov-strategy-coordinator`,
     capabilities: [
       {
         name: "BalanceCapability",

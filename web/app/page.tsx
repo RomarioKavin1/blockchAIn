@@ -185,7 +185,7 @@ const LandingPage = () => {
             after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px]
             "
           >
-            Unleash the Power of AI Swarms in the Blockchain
+            Not your average chatbot.XD
           </span>
         </motion.div>
 

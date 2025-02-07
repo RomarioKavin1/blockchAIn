@@ -1,9 +1,10 @@
 "use client";
-
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { agents, agentGroups } from "@/config/agents";
+import { swarm_abi, swarm_contract } from "@/lib/deployments";
 import LogoComponent from "@/components/logo";
 import CyberButton from "@/components/cyberButton";
 import OptimizedBackground from "@/components/background";
@@ -18,6 +19,13 @@ export default function CreateSwarmPage() {
   const [swarmName, setSwarmName] = useState("");
   const [isSidebarOpen, setSidebarOpen] = useState(true);
 
+  const { data: hash, error, isPending, writeContract } = useWriteContract();
+
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
+
   const handleAgentSelect = (agentId: string) => {
     if (selectedAgents.includes(agentId)) {
       setSelectedAgents((prev) => prev.filter((id) => id !== agentId));
@@ -26,13 +34,36 @@ export default function CreateSwarmPage() {
     }
   };
 
-  const handleCreateSwarm = () => {
-    if (!swarmName.trim()) {
-      // Add your error handling
-      return;
+  const handleCreateSwarm = async () => {
+    try {
+      // Generate a unique thread ID (you might want to modify this based on your needs)
+      const threadId = `swarm_${Date.now()}_${Math.random()
+        .toString(36)
+        .slice(2)}`;
+
+      // Convert selected agent IDs to numbers
+      const agentIds = selectedAgents
+        .map((id) => {
+          const agent = agents.find((a) => a.id === id);
+          return agent?.num || 0;
+        })
+        .filter((num) => num !== 0);
+
+      if (agentIds.length < 2) {
+        alert("Please select at least 2 agents");
+        return;
+      }
+
+      // Call the contract
+      await writeContract({
+        address: swarm_contract,
+        abi: swarm_abi,
+        functionName: "createSwarm",
+        args: [threadId, agentIds],
+      });
+    } catch (err) {
+      console.error("Error creating swarm:", err);
     }
-    console.log("Creating swarm:", { name: swarmName, agents: selectedAgents });
-    // Add your swarm creation logic
   };
 
   return (
@@ -149,6 +180,21 @@ export default function CreateSwarmPage() {
           }`}
         >
           <div className="container mx-auto px-8 py-4">
+            {error && (
+              <div className="mb-4 p-4 bg-red-900/50 border border-red-500 rounded-lg text-red-200">
+                Error: {error.message}
+              </div>
+            )}
+            {isConfirming && (
+              <div className="mb-4 p-4 bg-purple-900/50 border border-purple-500 rounded-lg">
+                Creating your swarm... Please wait.
+              </div>
+            )}
+            {isConfirmed && (
+              <div className="mb-4 p-4 bg-green-900/50 border border-green-500 rounded-lg">
+                Swarm created successfully! Transaction Hash: {hash}
+              </div>
+            )}
             {/* Swarm Name Input */}
             <div className="relative mb-8">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg blur opacity-75" />
@@ -262,9 +308,13 @@ export default function CreateSwarmPage() {
                   <CyberButton
                     cyberSize="xl"
                     onClick={handleCreateSwarm}
-                    disabled={selectedAgents.length < 2}
+                    disabled={
+                      selectedAgents.length < 2 || isPending || isConfirming
+                    }
                   >
-                    Create Swarm
+                    {isPending || isConfirming
+                      ? "Creating Swarm..."
+                      : "Create Swarm"}
                   </CyberButton>
                 </motion.div>
               </div>

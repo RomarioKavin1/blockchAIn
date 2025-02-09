@@ -97,7 +97,7 @@ const Dashboard = () => {
 
       if (!detailsResult || !agentsResult) continue;
 
-      const [threadId, agentCount, createdAt, status, owner] = detailsResult;
+      const [threadId, agentCount, createdAt] = detailsResult;
       const swarmId = swarmIds[i];
 
       const swarmAgents = agentsResult

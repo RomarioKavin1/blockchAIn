@@ -7,7 +7,7 @@ export function useCreateSwarm() {
 
   const createSwarm = async (threadId: string, initialAgentIds: number[]) => {
     try {
-      const tx = await writeContract({
+      await writeContract({
         abi: swarm_abi,
         address: swarm_contract,
         functionName: "createSwarm",

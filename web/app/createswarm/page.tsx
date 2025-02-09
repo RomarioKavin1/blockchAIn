@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { agents, agentGroups } from "@/config/agents";
@@ -16,7 +16,6 @@ export default function CreateSwarmPage() {
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [hoveredAgent, setHoveredAgent] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState(agentGroups[0].id);
-  const [swarmName, setSwarmName] = useState("");
   const [isSidebarOpen, setSidebarOpen] = useState(true);
 
   const { data: hash, error, isPending, writeContract } = useWriteContract();

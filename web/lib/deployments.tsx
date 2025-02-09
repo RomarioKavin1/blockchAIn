@@ -1,4 +1,3 @@
-import { type Abi } from "viem";
 export const swarm_contract = "0x418EBcE67a27E56860258156565dB10269fcfD31";
 export const swarm_abi = [
   {
@@ -381,12 +380,3 @@ export const swarm_abi = [
     type: "function",
   },
 ];
-
-export const createSwarmCall = (args: string[]) => {
-  return {
-    abi: swarm_abi,
-    functionName: "createSwarm",
-    args: [1, [1, 6]],
-    address: swarm_contract,
-  };
-};

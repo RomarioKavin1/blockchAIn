@@ -21,6 +21,7 @@ const queryClient = new QueryClient();
 export function Providers(props: { children: ReactNode }) {
   return (
     <DynamicContextProvider
+      theme={"dark"}
       settings={{
         environmentId: "8c6cc3a3-6751-4038-b749-5c4775a58510",
         walletConnectors: [EthereumWalletConnectors],

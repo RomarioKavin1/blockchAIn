@@ -24,7 +24,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${pixelFont.variable}`}
-      suppressHydrationWarning
+      suppressHydrationWarning={true}
     >
       <body className={`${pixelFont.className} antialiased`}>
         <Providers>{children}</Providers>
